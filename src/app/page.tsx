@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LoginButton } from "@/components/LoginButton";
+import Link from "next/link";
 
 export default async function HomePage() {
   const session = await auth();
@@ -37,6 +38,14 @@ export default async function HomePage() {
 
         {/* Login button */}
         <LoginButton />
+
+        {/* Guest access */}
+        <Link
+          href="/dashboard"
+          className="mt-3 block text-sm text-slate-500 transition-colors hover:text-slate-300 underline underline-offset-4"
+        >
+          Jelajahi tanpa login →
+        </Link>
 
         {/* Features */}
         <div className="mt-12 grid grid-cols-3 gap-6">
