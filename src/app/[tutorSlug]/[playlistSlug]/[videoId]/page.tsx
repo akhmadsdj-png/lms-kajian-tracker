@@ -1,10 +1,11 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { YouTubePlayer } from "@/components/YouTubePlayer";
 import { MarkCompleteButton } from "@/components/MarkCompleteButton";
 import { VideoListItem } from "@/components/VideoListItem";
+import { LoginBanner } from "@/components/LoginBanner";
 import Link from "next/link";
 
 export default async function VideoPage({
@@ -13,7 +14,7 @@ export default async function VideoPage({
   params: Promise<{ tutorSlug: string; playlistSlug: string; videoId: string }>;
 }) {
   const session = await auth();
-  if (!session?.user) redirect("/");
+  const userId = session?.user?.id;
 
   const { tutorSlug, playlistSlug, videoId } = await params;
 
@@ -25,17 +26,17 @@ export default async function VideoPage({
           tutor: true,
           videos: {
             include: {
-              progress: {
-                where: { userId: session.user.id },
-              },
+              progress: userId
+                ? { where: { userId } }
+                : false,
             },
             orderBy: { orderIndex: "asc" },
           },
         },
       },
-      progress: {
-        where: { userId: session.user.id },
-      },
+      progress: userId
+        ? { where: { userId } }
+        : false,
     },
   });
 
@@ -47,7 +48,7 @@ export default async function VideoPage({
     notFound();
   }
 
-  const userProgress = video.progress[0];
+  const userProgress = Array.isArray(video.progress) ? video.progress[0] : undefined;
   const startSeconds = userProgress?.lastWatchedSeconds ?? 0;
   const isCompleted = userProgress?.isCompleted ?? false;
 
@@ -59,6 +60,9 @@ export default async function VideoPage({
 
   return (
     <div className="relative min-h-[calc(100vh-57px)]">
+      {/* Login Banner for guests */}
+      {!session?.user && <LoginBanner />}
+
       <div className="bg-grid pointer-events-none absolute inset-0" />
 
       <div className="relative mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
@@ -94,10 +98,22 @@ export default async function VideoPage({
 
               {/* Actions */}
               <div className="flex flex-wrap items-center gap-3">
-                <MarkCompleteButton
-                  videoId={video.id}
-                  initialCompleted={isCompleted}
-                />
+                {session?.user ? (
+                  <MarkCompleteButton
+                    videoId={video.id}
+                    initialCompleted={isCompleted}
+                  />
+                ) : (
+                  <Link
+                    href="/api/auth/signin"
+                    className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-400 transition-all hover:border-amber-500/50 hover:bg-amber-500/20"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                    </svg>
+                    Login untuk Tandai Selesai
+                  </Link>
+                )}
 
                 {/* Navigation */}
                 <div className="flex gap-2 sm:ml-auto">
@@ -136,7 +152,7 @@ export default async function VideoPage({
               </h2>
               <div className="max-h-[calc(100vh-180px)] space-y-1.5 overflow-y-auto pr-1">
                 {allVideos.map((v) => {
-                  const vProgress = v.progress[0];
+                  const vProgress = Array.isArray(v.progress) ? v.progress[0] : undefined;
                   return (
                     <VideoListItem
                       key={v.id}

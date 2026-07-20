@@ -1,23 +1,23 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { LoginBanner } from "@/components/LoginBanner";
 
 export default async function DashboardPage() {
   const session = await auth();
-  if (!session?.user) redirect("/");
+  const userId = session?.user?.id;
 
-  // Get all tutors with their playlists and user progress
+  // Get all tutors with their playlists and user progress (if logged in)
   const tutors = await prisma.tutor.findMany({
     include: {
       playlists: {
         include: {
           videos: {
             include: {
-              progress: {
-                where: { userId: session.user.id },
-              },
+              progress: userId
+                ? { where: { userId } }
+                : false,
             },
           },
         },
@@ -35,7 +35,7 @@ export default async function DashboardPage() {
     tutor.playlists.forEach((playlist) => {
       playlist.videos.forEach((video) => {
         totalVideos++;
-        const progress = video.progress[0];
+        const progress = Array.isArray(video.progress) ? video.progress[0] : undefined;
         if (progress?.isCompleted) {
           completedVideos++;
         } else if (progress && progress.lastWatchedSeconds > 0) {
@@ -47,6 +47,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="relative min-h-[calc(100vh-57px)]">
+      {/* Login Banner for guests */}
+      {!session?.user && <LoginBanner />}
+
       {/* Background */}
       <div className="bg-grid pointer-events-none absolute inset-0" />
       <div className="pointer-events-none absolute right-0 top-0 h-[400px] w-[400px] rounded-full bg-emerald-500/[0.05] blur-[100px]" />
@@ -55,7 +58,7 @@ export default async function DashboardPage() {
         {/* Greeting */}
         <div className="mb-10">
           <div className="flex items-center gap-4 mb-2">
-            {session.user.image && (
+            {session?.user?.image ? (
               <Image
                 src={session.user.image}
                 alt={session.user.name ?? "User"}
@@ -63,11 +66,15 @@ export default async function DashboardPage() {
                 height={48}
                 className="rounded-xl ring-2 ring-emerald-500/20"
               />
+            ) : (
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 text-xl ring-2 ring-white/10">
+                👤
+              </div>
             )}
             <div>
               <p className="text-sm text-slate-500">Assalamu&apos;alaikum,</p>
               <h1 className="text-2xl font-bold text-white sm:text-3xl">
-                {session.user.name} 👋
+                {session?.user?.name ?? "Tamu"} 👋
               </h1>
             </div>
           </div>
@@ -123,7 +130,9 @@ export default async function DashboardPage() {
             const tutorCompletedVideos = tutor.playlists.reduce(
               (sum, p) =>
                 sum +
-                p.videos.filter((v) => v.progress[0]?.isCompleted).length,
+                p.videos.filter((v) =>
+                  Array.isArray(v.progress) && v.progress[0]?.isCompleted
+                ).length,
               0
             );
             const tutorProgress =
@@ -160,7 +169,7 @@ export default async function DashboardPage() {
                       />
                     </div>
                     <p className="mt-2 text-right text-xs font-medium text-emerald-400">
-                      {tutorProgress}%
+                      {userId ? `${tutorProgress}%` : "Login untuk melihat progres"}
                     </p>
                   </div>
                 </div>

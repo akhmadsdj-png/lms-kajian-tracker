@@ -1,5 +1,6 @@
 export { auth as proxy } from "@/lib/auth";
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/ustadz-firanda-andirja/:path*"],
+  // No forced redirects — all routes are publicly accessible
+  matcher: [],
 };
