@@ -173,6 +173,9 @@ async function main() {
             orderIndex: video.orderIndex,
           },
         });
+        
+        // Jeda sangat kecil per video agar Supabase Connection Pool bisa bernapas
+        await new Promise((r) => setTimeout(r, 20));
       }
 
       totalVideosAdded += videos.length;
