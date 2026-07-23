@@ -18,24 +18,30 @@ export default async function VideoPage({
 
   const { tutorSlug, playlistSlug, videoId } = await params;
 
+  // 1) Fetch the current video + playlist/tutor info (no sibling videos)
   const video = await prisma.video.findUnique({
     where: { id: videoId },
-    include: {
+    select: {
+      id: true,
+      youtubeVideoId: true,
+      title: true,
+      orderIndex: true,
       playlist: {
-        include: {
-          tutor: true,
-          videos: {
-            include: {
-              progress: userId
-                ? { where: { userId } }
-                : false,
-            },
-            orderBy: { orderIndex: "asc" },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          tutor: {
+            select: { name: true, slug: true },
           },
+          _count: { select: { videos: true } },
         },
       },
       progress: userId
-        ? { where: { userId } }
+        ? {
+            select: { lastWatchedSeconds: true, isCompleted: true },
+            where: { userId },
+          }
         : false,
     },
   });
@@ -48,15 +54,31 @@ export default async function VideoPage({
     notFound();
   }
 
+  // 2) Fetch sidebar videos separately — lightweight, only what the sidebar needs
+  const sidebarVideos = await prisma.video.findMany({
+    where: { playlistId: video.playlist.id },
+    select: {
+      id: true,
+      title: true,
+      orderIndex: true,
+      progress: userId
+        ? {
+            select: { lastWatchedSeconds: true, isCompleted: true },
+            where: { userId },
+          }
+        : false,
+    },
+    orderBy: { orderIndex: "asc" },
+  });
+
   const userProgress = Array.isArray(video.progress) ? video.progress[0] : undefined;
   const startSeconds = userProgress?.lastWatchedSeconds ?? 0;
   const isCompleted = userProgress?.isCompleted ?? false;
 
   // Find next and previous video
-  const allVideos = video.playlist.videos;
-  const currentIndex = allVideos.findIndex((v) => v.id === videoId);
-  const nextVideo = currentIndex < allVideos.length - 1 ? allVideos[currentIndex + 1] : null;
-  const prevVideo = currentIndex > 0 ? allVideos[currentIndex - 1] : null;
+  const currentIndex = sidebarVideos.findIndex((v) => v.id === videoId);
+  const nextVideo = currentIndex < sidebarVideos.length - 1 ? sidebarVideos[currentIndex + 1] : null;
+  const prevVideo = currentIndex > 0 ? sidebarVideos[currentIndex - 1] : null;
 
   return (
     <div className="relative min-h-[calc(100vh-57px)]">
@@ -151,7 +173,7 @@ export default async function VideoPage({
                 Daftar Video
               </h2>
               <div className="max-h-[calc(100vh-180px)] space-y-1.5 overflow-y-auto pr-1">
-                {allVideos.map((v) => {
+                {sidebarVideos.map((v) => {
                   const vProgress = Array.isArray(v.progress) ? v.progress[0] : undefined;
                   return (
                     <VideoListItem

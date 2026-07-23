@@ -47,37 +47,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Check existing progress for completion lock
-  const existing = await prisma.userProgress.findUnique({
-    where: {
-      userId_videoId: {
-        userId: session.user.id,
-        videoId,
-      },
-    },
-  });
+  // Single query: upsert with completion lock built into SQL
+  // Once isCompleted=true, it can NEVER be set back to false
+  const rows = await prisma.$queryRaw<{ id: string }[]>`
+    INSERT INTO "UserProgress" ("id", "userId", "videoId", "lastWatchedSeconds", "isCompleted", "updatedAt")
+    VALUES (gen_random_uuid(), ${session.user.id}, ${videoId}, ${Number(lastWatchedSeconds)}, ${!!isCompleted}, NOW())
+    ON CONFLICT ("userId", "videoId") DO UPDATE
+    SET "lastWatchedSeconds" = ${Number(lastWatchedSeconds)},
+        "isCompleted" = CASE
+          WHEN "UserProgress"."isCompleted" = true THEN true
+          ELSE ${!!isCompleted}
+        END,
+        "updatedAt" = NOW()
+    RETURNING "id"
+  `;
 
-  // CRITICAL: If already completed, NEVER set back to false
-  const finalIsCompleted = existing?.isCompleted ? true : !!isCompleted;
-
-  const progress = await prisma.userProgress.upsert({
-    where: {
-      userId_videoId: {
-        userId: session.user.id,
-        videoId,
-      },
-    },
-    update: {
-      lastWatchedSeconds: Number(lastWatchedSeconds),
-      isCompleted: finalIsCompleted,
-    },
-    create: {
-      userId: session.user.id,
-      videoId,
-      lastWatchedSeconds: Number(lastWatchedSeconds),
-      isCompleted: finalIsCompleted,
-    },
-  });
-
-  return NextResponse.json(progress);
+  return NextResponse.json({ saved: true, id: rows[0]?.id });
 }

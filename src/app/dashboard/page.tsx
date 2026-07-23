@@ -8,42 +8,49 @@ export default async function DashboardPage() {
   const session = await auth();
   const userId = session?.user?.id;
 
-  // Get all tutors with their playlists and user progress (if logged in)
+  // Fetch tutors with minimal fields — no video details needed here
   const tutors = await prisma.tutor.findMany({
-    include: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
       playlists: {
-        include: {
-          videos: {
-            include: {
-              progress: userId
-                ? { where: { userId } }
-                : false,
-            },
-          },
+        select: {
+          id: true,
+          videos: userId
+            ? {
+                select: {
+                  id: true,
+                  progress: {
+                    select: { isCompleted: true, lastWatchedSeconds: true },
+                    where: { userId },
+                  },
+                },
+              }
+            : { select: { id: true } },
         },
-        orderBy: { orderIndex: "asc" },
       },
     },
   });
 
-  // Calculate overall stats
+  // Compute stats in JS from lightweight data (no heavy fields loaded)
   let totalVideos = 0;
   let completedVideos = 0;
   let inProgressVideos = 0;
 
-  tutors.forEach((tutor) => {
-    tutor.playlists.forEach((playlist) => {
-      playlist.videos.forEach((video) => {
+  for (const tutor of tutors) {
+    for (const playlist of tutor.playlists) {
+      for (const video of playlist.videos) {
         totalVideos++;
-        const progress = Array.isArray(video.progress) ? video.progress[0] : undefined;
-        if (progress?.isCompleted) {
+        const p = video.progress?.[0];
+        if (p?.isCompleted) {
           completedVideos++;
-        } else if (progress && progress.lastWatchedSeconds > 0) {
+        } else if (p && p.lastWatchedSeconds > 0) {
           inProgressVideos++;
         }
-      });
-    });
-  });
+      }
+    }
+  }
 
   return (
     <div className="relative min-h-[calc(100vh-57px)]">
@@ -123,18 +130,14 @@ export default async function DashboardPage() {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {tutors.map((tutor) => {
-            const tutorTotalVideos = tutor.playlists.reduce(
-              (sum, p) => sum + p.videos.length,
-              0
-            );
-            const tutorCompletedVideos = tutor.playlists.reduce(
-              (sum, p) =>
-                sum +
-                p.videos.filter((v) =>
-                  Array.isArray(v.progress) && v.progress[0]?.isCompleted
-                ).length,
-              0
-            );
+            let tutorTotalVideos = 0;
+            let tutorCompletedVideos = 0;
+            for (const p of tutor.playlists) {
+              for (const v of p.videos) {
+                tutorTotalVideos++;
+                if (v.progress?.[0]?.isCompleted) tutorCompletedVideos++;
+              }
+            }
             const tutorProgress =
               tutorTotalVideos > 0
                 ? Math.round((tutorCompletedVideos / tutorTotalVideos) * 100)

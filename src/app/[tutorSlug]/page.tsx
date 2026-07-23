@@ -16,12 +16,22 @@ export default async function TutorPage({
 
   const tutor = await prisma.tutor.findUnique({
     where: { slug: tutorSlug },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      bio: true,
+      slug: true,
       playlists: {
-        include: {
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          description: true,
           videos: {
-            include: {
+            select: {
+              id: true,
               progress: {
+                select: { isCompleted: true, lastWatchedSeconds: true },
                 where: { userId: session.user.id },
               },
             },
@@ -66,14 +76,16 @@ export default async function TutorPage({
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {tutor.playlists.map((playlist) => {
-            const completedCount = playlist.videos.filter(
-              (v) => v.progress[0]?.isCompleted
-            ).length;
-            const inProgressCount = playlist.videos.filter(
-              (v) =>
-                !v.progress[0]?.isCompleted &&
-                (v.progress[0]?.lastWatchedSeconds ?? 0) > 0
-            ).length;
+            let completedCount = 0;
+            let inProgressCount = 0;
+            for (const v of playlist.videos) {
+              const p = v.progress[0];
+              if (p?.isCompleted) {
+                completedCount++;
+              } else if (p && p.lastWatchedSeconds > 0) {
+                inProgressCount++;
+              }
+            }
 
             return (
               <PlaylistCard
