@@ -17,17 +17,15 @@ export default async function DashboardPage() {
       playlists: {
         select: {
           id: true,
-          videos: userId
-            ? {
-                select: {
-                  id: true,
-                  progress: {
-                    select: { isCompleted: true, lastWatchedSeconds: true },
-                    where: { userId },
-                  },
-                },
-              }
-            : { select: { id: true } },
+          videos: {
+            select: {
+              id: true,
+              progress: {
+                select: { isCompleted: true, lastWatchedSeconds: true },
+                where: userId ? { userId } : { userId: "__guest_never_matches__" },
+              },
+            },
+          },
         },
       },
     },

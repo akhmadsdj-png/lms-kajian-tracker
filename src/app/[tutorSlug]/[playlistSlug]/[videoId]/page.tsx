@@ -37,12 +37,10 @@ export default async function VideoPage({
           _count: { select: { videos: true } },
         },
       },
-      progress: userId
-        ? {
-            select: { lastWatchedSeconds: true, isCompleted: true },
-            where: { userId },
-          }
-        : false,
+      progress: {
+        select: { lastWatchedSeconds: true, isCompleted: true },
+        where: userId ? { userId } : { userId: "__guest_never_matches__" },
+      },
     },
   });
 
@@ -61,17 +59,15 @@ export default async function VideoPage({
       id: true,
       title: true,
       orderIndex: true,
-      progress: userId
-        ? {
-            select: { lastWatchedSeconds: true, isCompleted: true },
-            where: { userId },
-          }
-        : false,
+      progress: {
+        select: { lastWatchedSeconds: true, isCompleted: true },
+        where: userId ? { userId } : { userId: "__guest_never_matches__" },
+      },
     },
     orderBy: { orderIndex: "asc" },
   });
 
-  const userProgress = Array.isArray(video.progress) ? video.progress[0] : undefined;
+  const userProgress = video.progress[0];
   const startSeconds = userProgress?.lastWatchedSeconds ?? 0;
   const isCompleted = userProgress?.isCompleted ?? false;
 
@@ -174,7 +170,7 @@ export default async function VideoPage({
               </h2>
               <div className="max-h-[calc(100vh-180px)] space-y-1.5 overflow-y-auto pr-1">
                 {sidebarVideos.map((v) => {
-                  const vProgress = Array.isArray(v.progress) ? v.progress[0] : undefined;
+                  const vProgress = v.progress[0];
                   return (
                     <VideoListItem
                       key={v.id}
