@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { YouTubePlayer } from "@/components/YouTubePlayer";
@@ -7,6 +6,11 @@ import { MarkCompleteButton } from "@/components/MarkCompleteButton";
 import { VideoListItem } from "@/components/VideoListItem";
 import { LoginBanner } from "@/components/LoginBanner";
 import Link from "next/link";
+import {
+  getVideoPageData,
+  getVideoProgress,
+  getSidebarVideos,
+} from "@/lib/queries";
 
 export default async function VideoPage({
   params,
@@ -18,31 +22,7 @@ export default async function VideoPage({
 
   const { tutorSlug, playlistSlug, videoId } = await params;
 
-  // 1) Fetch the current video + playlist/tutor info (no sibling videos)
-  const video = await prisma.video.findUnique({
-    where: { id: videoId },
-    select: {
-      id: true,
-      youtubeVideoId: true,
-      title: true,
-      orderIndex: true,
-      playlist: {
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          tutor: {
-            select: { name: true, slug: true },
-          },
-          _count: { select: { videos: true } },
-        },
-      },
-      progress: {
-        select: { lastWatchedSeconds: true, isCompleted: true },
-        where: userId ? { userId } : { userId: "__guest_never_matches__" },
-      },
-    },
-  });
+  const video = await getVideoPageData(videoId);
 
   if (
     !video ||
@@ -52,22 +32,29 @@ export default async function VideoPage({
     notFound();
   }
 
-  // 2) Fetch sidebar videos separately — lightweight, only what the sidebar needs
-  const sidebarVideos = await prisma.video.findMany({
-    where: { playlistId: video.playlist.id },
-    select: {
-      id: true,
-      title: true,
-      orderIndex: true,
-      progress: {
-        select: { lastWatchedSeconds: true, isCompleted: true },
-        where: userId ? { userId } : { userId: "__guest_never_matches__" },
-      },
-    },
-    orderBy: { orderIndex: "asc" },
-  });
+  const sidebarVideos = await getSidebarVideos(video.playlist.id);
 
-  const userProgress = video.progress[0];
+  // Fetch progress separately (cached per user)
+  let userProgress = null;
+  const sidebarProgressMap = new Map<string, { lastWatchedSeconds: number; isCompleted: boolean }>();
+
+  if (userId) {
+    const [currentProgress, allProgress] = await Promise.all([
+      getVideoProgress(userId, videoId),
+      getVideoProgress(userId, videoId).then(() =>
+        // Fetch all sidebar progress in parallel
+        Promise.all(
+          sidebarVideos.map((sv) => getVideoProgress(userId, sv.id))
+        )
+      ),
+    ]);
+    userProgress = currentProgress;
+    for (let i = 0; i < sidebarVideos.length; i++) {
+      const p = allProgress[i];
+      if (p) sidebarProgressMap.set(sidebarVideos[i].id, p);
+    }
+  }
+
   const startSeconds = userProgress?.lastWatchedSeconds ?? 0;
   const isCompleted = userProgress?.isCompleted ?? false;
 
@@ -170,7 +157,7 @@ export default async function VideoPage({
               </h2>
               <div className="max-h-[calc(100vh-180px)] space-y-1.5 overflow-y-auto pr-1">
                 {sidebarVideos.map((v) => {
-                  const vProgress = v.progress[0];
+                  const vProgress = sidebarProgressMap.get(v.id);
                   return (
                     <VideoListItem
                       key={v.id}

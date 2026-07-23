@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PlaylistCard } from "@/components/PlaylistCard";
+import { getTutorPageData, getTutorProgress } from "@/lib/queries";
 
 export default async function TutorPage({
   params,
@@ -14,35 +14,14 @@ export default async function TutorPage({
 
   const { tutorSlug } = await params;
 
-  const tutor = await prisma.tutor.findUnique({
-    where: { slug: tutorSlug },
-    select: {
-      id: true,
-      name: true,
-      bio: true,
-      slug: true,
-      playlists: {
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          description: true,
-          videos: {
-            select: {
-              id: true,
-              progress: {
-                select: { isCompleted: true, lastWatchedSeconds: true },
-                where: { userId: session.user.id },
-              },
-            },
-          },
-        },
-        orderBy: { orderIndex: "asc" },
-      },
-    },
-  });
-
+  const tutor = await getTutorPageData(tutorSlug);
   if (!tutor) notFound();
+
+  // Fetch user progress separately (cached per user)
+  const progressRows = await getTutorProgress(session.user.id, tutor.id);
+  const progressMap = new Map(
+    progressRows.map((r) => [r.videoId, r])
+  );
 
   return (
     <div className="relative min-h-[calc(100vh-57px)]">
@@ -79,7 +58,7 @@ export default async function TutorPage({
             let completedCount = 0;
             let inProgressCount = 0;
             for (const v of playlist.videos) {
-              const p = v.progress[0];
+              const p = progressMap.get(v.id);
               if (p?.isCompleted) {
                 completedCount++;
               } else if (p && p.lastWatchedSeconds > 0) {

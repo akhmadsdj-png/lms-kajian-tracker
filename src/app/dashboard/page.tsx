@@ -1,37 +1,26 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import Image from "next/image";
 import Link from "next/link";
 import { LoginBanner } from "@/components/LoginBanner";
+import { getDashboardTutors, getDashboardUserProgress } from "@/lib/queries";
 
 export default async function DashboardPage() {
   const session = await auth();
   const userId = session?.user?.id;
 
-  // Fetch tutors with minimal fields — no video details needed here
-  const tutors = await prisma.tutor.findMany({
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      playlists: {
-        select: {
-          id: true,
-          videos: {
-            select: {
-              id: true,
-              progress: {
-                select: { isCompleted: true, lastWatchedSeconds: true },
-                where: userId ? { userId } : { userId: "__guest_never_matches__" },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
+  // Fetch cached tutor data (no user-specific fields)
+  const tutors = await getDashboardTutors();
 
-  // Compute stats in JS from lightweight data (no heavy fields loaded)
+  // Fetch cached user progress separately (only if logged in)
+  const progressMap = userId
+    ? await getDashboardUserProgress(userId).then((rows) => {
+        const map = new Map<string, { isCompleted: boolean; lastWatchedSeconds: number }>();
+        for (const r of rows) map.set(r.videoId, r);
+        return map;
+      })
+    : null;
+
+  // Compute stats
   let totalVideos = 0;
   let completedVideos = 0;
   let inProgressVideos = 0;
@@ -40,11 +29,13 @@ export default async function DashboardPage() {
     for (const playlist of tutor.playlists) {
       for (const video of playlist.videos) {
         totalVideos++;
-        const p = video.progress?.[0];
-        if (p?.isCompleted) {
-          completedVideos++;
-        } else if (p && p.lastWatchedSeconds > 0) {
-          inProgressVideos++;
+        if (progressMap) {
+          const p = progressMap.get(video.id);
+          if (p?.isCompleted) {
+            completedVideos++;
+          } else if (p && p.lastWatchedSeconds > 0) {
+            inProgressVideos++;
+          }
         }
       }
     }
@@ -133,7 +124,10 @@ export default async function DashboardPage() {
             for (const p of tutor.playlists) {
               for (const v of p.videos) {
                 tutorTotalVideos++;
-                if (v.progress?.[0]?.isCompleted) tutorCompletedVideos++;
+                if (progressMap) {
+                  const prog = progressMap.get(v.id);
+                  if (prog?.isCompleted) tutorCompletedVideos++;
+                }
               }
             }
             const tutorProgress =

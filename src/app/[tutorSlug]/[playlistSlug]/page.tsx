@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { VideoListItem } from "@/components/VideoListItem";
+import { getPlaylistPageData, getPlaylistProgress } from "@/lib/queries";
 
 export default async function PlaylistPage({
   params,
@@ -14,26 +14,19 @@ export default async function PlaylistPage({
 
   const { tutorSlug, playlistSlug } = await params;
 
-  const playlist = await prisma.playlist.findUnique({
-    where: { slug: playlistSlug },
-    include: {
-      tutor: true,
-      videos: {
-        include: {
-          progress: {
-            where: { userId: session.user.id },
-          },
-        },
-        orderBy: { orderIndex: "asc" },
-      },
-    },
-  });
-
+  const playlist = await getPlaylistPageData(playlistSlug);
   if (!playlist || playlist.tutor.slug !== tutorSlug) notFound();
 
-  const completedCount = playlist.videos.filter(
-    (v) => v.progress[0]?.isCompleted
-  ).length;
+  // Fetch user progress separately (cached per user)
+  const progressRows = await getPlaylistProgress(session.user.id, playlist.id);
+  const progressMap = new Map(
+    progressRows.map((r) => [r.videoId, r])
+  );
+
+  let completedCount = 0;
+  for (const v of playlist.videos) {
+    if (progressMap.get(v.id)?.isCompleted) completedCount++;
+  }
   const progressPercent =
     playlist.videos.length > 0
       ? Math.round((completedCount / playlist.videos.length) * 100)
@@ -85,7 +78,7 @@ export default async function PlaylistPage({
         {/* Video List */}
         <div className="space-y-2">
           {playlist.videos.map((video) => {
-            const progress = video.progress[0];
+            const progress = progressMap.get(video.id);
             return (
               <VideoListItem
                 key={video.id}

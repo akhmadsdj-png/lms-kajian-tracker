@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 
 function slugify(text: string): string {
   return text
@@ -42,6 +42,7 @@ export async function addTutorAction(formData: FormData) {
     throw new Error(error.message);
   }
 
+  revalidateTag("tutors", { expire: 0 });
   revalidatePath("/admin");
   revalidatePath("/dashboard");
 }
