@@ -11,12 +11,14 @@ import {
   getVideoProgress,
   getSidebarVideos,
 } from "@/lib/queries";
+import { connection } from "next/server";
 
 export default async function VideoPage({
   params,
 }: {
   params: Promise<{ tutorSlug: string; playlistSlug: string; videoId: string }>;
 }) {
+  await connection();
   const session = await auth();
   const userId = session?.user?.id;
 

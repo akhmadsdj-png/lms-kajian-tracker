@@ -2,8 +2,10 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LoginButton } from "@/components/LoginButton";
 import Link from "next/link";
+import { connection } from "next/server";
 
 export default async function HomePage() {
+  await connection();
   const session = await auth();
 
   if (session) {

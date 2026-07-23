@@ -3,8 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { LoginBanner } from "@/components/LoginBanner";
 import { getDashboardTutors, getDashboardUserProgress } from "@/lib/queries";
+import { connection } from "next/server";
 
 export default async function DashboardPage() {
+  await connection();
   const session = await auth();
   const userId = session?.user?.id;
 

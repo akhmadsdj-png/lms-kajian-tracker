@@ -3,12 +3,14 @@ import { redirect, notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { VideoListItem } from "@/components/VideoListItem";
 import { getPlaylistPageData, getPlaylistProgress } from "@/lib/queries";
+import { connection } from "next/server";
 
 export default async function PlaylistPage({
   params,
 }: {
   params: Promise<{ tutorSlug: string; playlistSlug: string }>;
 }) {
+  await connection();
   const session = await auth();
   if (!session?.user?.id) redirect("/");
   const userId = session.user.id;

@@ -3,8 +3,10 @@ import { isAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { addTutorAction } from "./actions";
+import { connection } from "next/server";
 
 export default async function AdminPage() {
+  await connection();
   const session = await auth();
 
   if (!isAdmin(session?.user?.email)) {

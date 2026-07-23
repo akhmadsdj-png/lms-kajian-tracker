@@ -3,12 +3,14 @@ import { redirect, notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PlaylistCard } from "@/components/PlaylistCard";
 import { getTutorPageData, getTutorProgress } from "@/lib/queries";
+import { connection } from "next/server";
 
 export default async function TutorPage({
   params,
 }: {
   params: Promise<{ tutorSlug: string }>;
 }) {
+  await connection();
   const session = await auth();
   if (!session?.user?.id) redirect("/");
   const userId = session.user.id;
