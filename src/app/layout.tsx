@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { SessionProvider } from "@/components/SessionProvider";
 import { Navbar } from "@/components/Navbar";
+import { Suspense } from "react";
 import "./globals.css";
 
 const inter = Inter({
@@ -23,10 +24,12 @@ export default function RootLayout({
   return (
     <html lang="id" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-[family-name:var(--font-inter)]">
-        <SessionProvider>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-        </SessionProvider>
+        <Suspense>
+          <SessionProvider>
+            <Navbar />
+            <main className="flex-1">{children}</main>
+          </SessionProvider>
+        </Suspense>
       </body>
     </html>
   );
