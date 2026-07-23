@@ -11,6 +11,7 @@ export default async function PlaylistPage({
 }) {
   const session = await auth();
   if (!session?.user) redirect("/");
+  const userId = session.user.id;
 
   const { tutorSlug, playlistSlug } = await params;
 
@@ -18,7 +19,7 @@ export default async function PlaylistPage({
   if (!playlist || playlist.tutor.slug !== tutorSlug) notFound();
 
   // Fetch user progress separately (cached per user)
-  const progressRows = await getPlaylistProgress(session.user.id, playlist.id);
+  const progressRows = await getPlaylistProgress(userId, playlist.id);
   const progressMap = new Map(
     progressRows.map((r) => [r.videoId, r])
   );

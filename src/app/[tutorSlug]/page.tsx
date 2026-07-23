@@ -11,6 +11,7 @@ export default async function TutorPage({
 }) {
   const session = await auth();
   if (!session?.user) redirect("/");
+  const userId = session.user.id;
 
   const { tutorSlug } = await params;
 
@@ -18,7 +19,7 @@ export default async function TutorPage({
   if (!tutor) notFound();
 
   // Fetch user progress separately (cached per user)
-  const progressRows = await getTutorProgress(session.user.id, tutor.id);
+  const progressRows = await getTutorProgress(userId, tutor.id);
   const progressMap = new Map(
     progressRows.map((r) => [r.videoId, r])
   );
