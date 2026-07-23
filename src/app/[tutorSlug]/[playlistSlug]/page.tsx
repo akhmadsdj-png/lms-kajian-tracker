@@ -10,7 +10,7 @@ export default async function PlaylistPage({
   params: Promise<{ tutorSlug: string; playlistSlug: string }>;
 }) {
   const session = await auth();
-  if (!session?.user) redirect("/");
+  if (!session?.user?.id) redirect("/");
   const userId = session.user.id;
 
   const { tutorSlug, playlistSlug } = await params;

@@ -10,7 +10,7 @@ export default async function TutorPage({
   params: Promise<{ tutorSlug: string }>;
 }) {
   const session = await auth();
-  if (!session?.user) redirect("/");
+  if (!session?.user?.id) redirect("/");
   const userId = session.user.id;
 
   const { tutorSlug } = await params;
