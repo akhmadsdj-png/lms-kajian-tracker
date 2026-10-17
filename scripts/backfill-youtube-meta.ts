@@ -19,8 +19,9 @@ const prisma = new PrismaClient();
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY!;
 const BASE_URL = "https://www.googleapis.com/youtube/v3";
 
-// "PT1H23M5S" → 4985
-function parseIsoDuration(iso: string): number | null {
+// "PT1H23M5S" → 4985. Upcoming lives/premieres have no duration yet → null, retried next run.
+function parseIsoDuration(iso: string | undefined): number | null {
+  if (!iso) return null;
   const m = iso.match(/^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
   if (!m) return null;
   const [, d, h, min, s] = m.map((x) => Number(x ?? 0));
@@ -49,11 +50,11 @@ async function backfillDurations() {
   for (let i = 0; i < ids.length; i += 50) {
     const batch = ids.slice(i, i + 50);
     const data = await youtube<{
-      items: { id: string; contentDetails: { duration: string } }[];
+      items: { id: string; contentDetails?: { duration?: string } }[];
     }>("videos", { part: "contentDetails", id: batch.join(","), maxResults: "50" });
 
     const values = data.items
-      .map((item) => [item.id, parseIsoDuration(item.contentDetails.duration)] as const)
+      .map((item) => [item.id, parseIsoDuration(item.contentDetails?.duration)] as const)
       .filter((v): v is readonly [string, number] => v[1] !== null);
     if (values.length === 0) continue;
 
