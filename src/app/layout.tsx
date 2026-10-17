@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Amiri, Literata, Source_Sans_3 } from "next/font/google";
 import { SessionProvider } from "@/components/SessionProvider";
-import { Navbar } from "@/components/Navbar";
+import { AppShell } from "@/components/shell/AppShell";
+import { Rail } from "@/components/shell/Rail";
+import { Sidebar, SidebarSkeleton } from "@/components/shell/Sidebar";
 import { Suspense } from "react";
 import "./globals.css";
 
@@ -35,11 +37,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" className={`${literata.variable} ${sourceSans.variable} ${amiri.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">
+      <body className="min-h-full">
         <Suspense>
           <SessionProvider>
-            <Navbar />
-            <main className="flex-1">{children}</main>
+            <AppShell
+              sidebar={
+                <Suspense fallback={<SidebarSkeleton />}>
+                  <Sidebar />
+                </Suspense>
+              }
+              rail={
+                <Suspense fallback={null}>
+                  <Rail />
+                </Suspense>
+              }
+            >
+              {children}
+            </AppShell>
           </SessionProvider>
         </Suspense>
       </body>

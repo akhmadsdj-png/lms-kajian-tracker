@@ -199,3 +199,46 @@ export async function getContinueWatching(userId: string) {
     },
   });
 }
+
+export async function searchCatalog(q: string) {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("tutors");
+
+  const match = { contains: q, mode: "insensitive" as const };
+  const [playlists, videos] = await Promise.all([
+    prisma.playlist.findMany({
+      where: { title: match },
+      take: 12,
+      orderBy: { orderIndex: "asc" },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        thumbnailUrl: true,
+        _count: { select: { videos: true } },
+        tutor: { select: { name: true, slug: true } },
+      },
+    }),
+    prisma.video.findMany({
+      where: { title: match },
+      take: 40,
+      orderBy: [{ playlist: { orderIndex: "asc" } }, { orderIndex: "asc" }],
+      select: {
+        id: true,
+        title: true,
+        orderIndex: true,
+        youtubeVideoId: true,
+        durationSeconds: true,
+        playlist: {
+          select: {
+            slug: true,
+            title: true,
+            tutor: { select: { name: true, slug: true, imageUrl: true } },
+          },
+        },
+      },
+    }),
+  ]);
+  return { playlists, videos };
+}

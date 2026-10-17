@@ -16,11 +16,18 @@ import {
 } from "@/lib/queries";
 import { displayTitle, formatTime } from "@/lib/format";
 import { upsizeThumb, videoThumb } from "@/lib/youtube";
-import { CATEGORY_ORDER, categorize } from "@/lib/categories";
+import { CATEGORIES, CATEGORY_ORDER, categorize } from "@/lib/categories";
+import { followedPlaylists, summarizeProgress } from "@/lib/library";
 import { connection } from "next/server";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ kategori?: string }>;
+}) {
   await connection();
+  const { kategori } = await searchParams;
+  const activeCategory = CATEGORIES.find((c) => c.slug === kategori);
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -30,22 +37,8 @@ export default async function DashboardPage() {
     userId ? getContinueWatching(userId) : Promise.resolve([]),
   ]);
 
-  const completedByPlaylist = new Map<string, number>();
-  const lastActivityByPlaylist = new Map<string, number>();
-  let secondsWatched = 0;
-  let inProgress = 0;
-  for (const r of progressRows) {
-    const id = r.video.playlistId;
-    const at = new Date(r.updatedAt).getTime();
-    lastActivityByPlaylist.set(id, Math.max(lastActivityByPlaylist.get(id) ?? 0, at));
-    if (r.isCompleted) {
-      completedByPlaylist.set(id, (completedByPlaylist.get(id) ?? 0) + 1);
-      secondsWatched += r.video.durationSeconds ?? r.lastWatchedSeconds;
-    } else {
-      secondsWatched += r.lastWatchedSeconds;
-      if (r.lastWatchedSeconds > 0) inProgress++;
-    }
-  }
+  const { completedByPlaylist, lastActivityByPlaylist, secondsWatched, inProgress } =
+    summarizeProgress(progressRows);
 
   const allPlaylists = tutors.flatMap((t) =>
     t.playlists.map((p) => ({ ...p, tutorName: t.name, tutorSlug: t.slug })),
@@ -59,9 +52,7 @@ export default async function DashboardPage() {
 
   const featured = pickDailyFeatured(allPlaylists);
 
-  const followed = allPlaylists
-    .filter((p) => lastActivityByPlaylist.has(p.id))
-    .sort((a, b) => lastActivityByPlaylist.get(b.id)! - lastActivityByPlaylist.get(a.id)!);
+  const followed = followedPlaylists(allPlaylists, lastActivityByPlaylist);
 
   const stats: ProgressStats | null = userId
     ? {
@@ -104,84 +95,28 @@ export default async function DashboardPage() {
     <>
       {!session?.user && <LoginBanner />}
 
-      {hero && (
-        <section className="relative isolate">
-          <Backdrop src={hero.art} />
-          <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 pt-8 pb-6 sm:px-6 sm:pt-14 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-12">
-            <Link href={hero.href} className="group relative block" tabIndex={-1} aria-hidden>
-              <Thumb
-                src={hero.art}
-                durationSeconds={hero.durationSeconds}
-                watchedSeconds={hero.watchedSeconds}
-                sizes="(min-width: 768px) 640px, 100vw"
-                priority
-                className="rounded-xl shadow-2xl shadow-black/60"
-              />
-              <span className="absolute inset-0 flex items-center justify-center">
-                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur transition-transform group-hover:scale-110">
-                  <PlayIcon className="ml-1 h-7 w-7" />
-                </span>
-              </span>
-            </Link>
+      <nav
+        aria-label="Kategori"
+        className="no-scrollbar sticky top-14 z-30 flex gap-3 overflow-x-auto bg-paper/90 px-4 py-3 backdrop-blur-xl sm:px-6"
+      >
+        <Chip href="/dashboard" active={!activeCategory}>
+          Semua
+        </Chip>
+        {CATEGORIES.filter((c) => shelves.has(c.name)).map((c) => (
+          <Chip key={c.slug} href={`/dashboard?kategori=${c.slug}`} active={activeCategory?.slug === c.slug}>
+            {c.name}
+          </Chip>
+        ))}
+      </nav>
 
-            <div>
-              <p className="font-semibold text-pen">{hero.kicker}</p>
-              <h1 className="mt-2 text-3xl leading-tight sm:text-4xl lg:text-5xl">{hero.title}</h1>
-              <p className="mt-3 text-pencil">{hero.meta}</p>
-              <Link
-                href={hero.href}
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-ink px-6 py-3 font-bold tabular-nums text-paper hover:opacity-90"
-              >
-                <PlayIcon className="h-5 w-5" />
-                {hero.cta}
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
-        <ProgressSummary stats={stats} />
-
-        {resumeList.length > 1 && (
-          <Shelf title="Lanjutkan menonton">
-            {resumeList.map((r) => (
-              <VideoTile
-                key={r.video.id}
-                href={`/${r.video.playlist.tutor.slug}/${r.video.playlist.slug}/${r.video.id}`}
-                title={r.video.title}
-                youtubeVideoId={r.video.youtubeVideoId}
-                durationSeconds={r.video.durationSeconds}
-                watchedSeconds={r.lastWatchedSeconds}
-                meta={`Pertemuan ${r.video.orderIndex}, ${r.video.playlist.title}`}
-              />
-            ))}
-          </Shelf>
-        )}
-
-        {followed.length > 0 && (
-          <Shelf title="Playlist yang kamu ikuti">
-            {followed.map((p) => (
+      {activeCategory ? (
+        <div className="mx-auto max-w-7xl px-4 pt-4 pb-16 sm:px-6">
+          <h1 className="font-sans text-2xl font-bold sm:text-3xl">{activeCategory.name}</h1>
+          <p className="mt-1 text-pencil">{shelves.get(activeCategory.name)?.length ?? 0} playlist</p>
+          <div className="mt-6 grid grid-cols-1 gap-x-5 gap-y-8 min-[480px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+            {(shelves.get(activeCategory.name) ?? []).map((p) => (
               <PlaylistTile
                 key={p.id}
-                inShelf
-                href={`/${p.tutorSlug}/${p.slug}`}
-                title={p.title}
-                thumbnailUrl={p.thumbnailUrl}
-                totalVideos={p._count.videos}
-                completedVideos={completedByPlaylist.get(p.id) ?? 0}
-                subtitle="Baru dimulai"
-              />
-            ))}
-          </Shelf>
-        )}
-
-        {CATEGORY_ORDER.filter((name) => shelves.has(name)).map((name) => (
-          <Shelf key={name} title={name}>
-            {shelves.get(name)!.map((p) => (
-              <PlaylistTile
-                key={p.id}
-                inShelf
                 href={`/${p.tutorSlug}/${p.slug}`}
                 title={p.title}
                 thumbnailUrl={p.thumbnailUrl}
@@ -190,26 +125,132 @@ export default async function DashboardPage() {
                 subtitle={p.tutorName}
               />
             ))}
-          </Shelf>
-        ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          {hero && (
+            <section className="relative isolate">
+              <Backdrop src={hero.art} />
+              <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 pt-8 pb-6 sm:px-6 sm:pt-14 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-12">
+                <Link href={hero.href} className="group relative block" tabIndex={-1} aria-hidden>
+                  <Thumb
+                    src={hero.art}
+                    durationSeconds={hero.durationSeconds}
+                    watchedSeconds={hero.watchedSeconds}
+                    sizes="(min-width: 768px) 640px, 100vw"
+                    priority
+                    className="rounded-xl shadow-2xl shadow-black/60"
+                  />
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur transition-transform group-hover:scale-110">
+                      <PlayIcon className="ml-1 h-7 w-7" />
+                    </span>
+                  </span>
+                </Link>
 
-        <Shelf title="Pengajar">
-          {tutors.map((tutor) => (
-            <li key={tutor.id} className="w-36 shrink-0 snap-start">
-              <Link href={`/${tutor.slug}`} className="group block text-center">
-                <span className="mx-auto block w-fit rounded-full transition-transform group-hover:scale-105">
-                  <Avatar src={tutor.imageUrl} name={tutor.name} size={128} />
-                </span>
-                <p className="mt-3 line-clamp-2 font-semibold leading-snug group-hover:text-pen">{tutor.name}</p>
-                <p className="mt-0.5 text-sm text-pencil">
-                  {tutor.playlists.length > 0 ? `${tutor.playlists.length} playlist` : "Segera hadir"}
-                </p>
-              </Link>
-            </li>
-          ))}
-        </Shelf>
-      </div>
+                <div>
+                  <p className="font-semibold text-pen">{hero.kicker}</p>
+                  <h1 className="mt-2 text-3xl leading-tight sm:text-4xl lg:text-5xl">{hero.title}</h1>
+                  <p className="mt-3 text-pencil">{hero.meta}</p>
+                  <Link
+                    href={hero.href}
+                    className="mt-6 inline-flex items-center gap-2 rounded-full bg-ink px-6 py-3 font-bold tabular-nums text-paper hover:opacity-90"
+                  >
+                    <PlayIcon className="h-5 w-5" />
+                    {hero.cta}
+                  </Link>
+                </div>
+              </div>
+            </section>
+          )}
+
+          <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
+            <ProgressSummary stats={stats} />
+
+            {resumeList.length > 1 && (
+              <Shelf title="Lanjutkan menonton">
+                {resumeList.map((r) => (
+                  <VideoTile
+                    key={r.video.id}
+                    href={`/${r.video.playlist.tutor.slug}/${r.video.playlist.slug}/${r.video.id}`}
+                    title={r.video.title}
+                    youtubeVideoId={r.video.youtubeVideoId}
+                    durationSeconds={r.video.durationSeconds}
+                    watchedSeconds={r.lastWatchedSeconds}
+                    meta={`Pertemuan ${r.video.orderIndex}, ${r.video.playlist.title}`}
+                  />
+                ))}
+              </Shelf>
+            )}
+
+            {followed.length > 0 && (
+              <Shelf title="Playlist yang kamu ikuti">
+                {followed.map((p) => (
+                  <PlaylistTile
+                    key={p.id}
+                    inShelf
+                    href={`/${p.tutorSlug}/${p.slug}`}
+                    title={p.title}
+                    thumbnailUrl={p.thumbnailUrl}
+                    totalVideos={p._count.videos}
+                    completedVideos={completedByPlaylist.get(p.id) ?? 0}
+                    subtitle="Baru dimulai"
+                  />
+                ))}
+              </Shelf>
+            )}
+
+            {CATEGORY_ORDER.filter((name) => shelves.has(name)).map((name) => (
+              <Shelf key={name} title={name}>
+                {shelves.get(name)!.map((p) => (
+                  <PlaylistTile
+                    key={p.id}
+                    inShelf
+                    href={`/${p.tutorSlug}/${p.slug}`}
+                    title={p.title}
+                    thumbnailUrl={p.thumbnailUrl}
+                    totalVideos={p._count.videos}
+                    completedVideos={completedByPlaylist.get(p.id) ?? 0}
+                    subtitle={p.tutorName}
+                  />
+                ))}
+              </Shelf>
+            ))}
+
+            <Shelf title="Pengajar">
+              {tutors.map((tutor) => (
+                <li key={tutor.id} className="w-36 shrink-0 snap-start">
+                  <Link href={`/${tutor.slug}`} className="group block text-center">
+                    <span className="mx-auto block w-fit rounded-full transition-transform group-hover:scale-105">
+                      <Avatar src={tutor.imageUrl} name={tutor.name} size={128} />
+                    </span>
+                    <p className="mt-3 line-clamp-2 font-semibold leading-snug group-hover:text-pen">{tutor.name}</p>
+                    <p className="mt-0.5 text-sm text-pencil">
+                      {tutor.playlists.length > 0 ? `${tutor.playlists.length} playlist` : "Segera hadir"}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </Shelf>
+          </div>
+        </>
+      )}
     </>
+  );
+}
+
+function Chip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-semibold whitespace-nowrap ${
+        active ? "bg-ink text-paper" : "bg-raised hover:bg-rule"
+      }`}
+    >
+      {children}
+    </Link>
   );
 }
 

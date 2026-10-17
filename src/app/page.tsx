@@ -23,7 +23,7 @@ export default async function HomePage() {
   const playlistCount = tutors.reduce((n, t) => n + t.playlists.length, 0);
 
   return (
-    <div className="relative isolate flex min-h-[calc(100svh-57px)] items-end overflow-hidden">
+    <div className="relative isolate flex min-h-[calc(100svh-3.5rem)] items-end overflow-hidden">
       {/* Wall of real playlist artwork, tilted like a TV app home screen */}
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
         <div className="absolute -top-24 left-1/2 grid w-[1600px] -translate-x-1/2 -rotate-6 grid-cols-6 gap-3 opacity-70">
