@@ -49,18 +49,18 @@ export default async function AdminPage() {
 
             <div>
               <label htmlFor="youtubeChannelId" className="mb-1 block font-semibold">
-                ID channel YouTube
+                Channel YouTube
               </label>
               <input
                 type="text"
                 id="youtubeChannelId"
                 name="youtubeChannelId"
                 required
-                placeholder="UC…"
+                placeholder="@amminurbaits"
                 className={inputClass}
               />
               <p className="mt-1.5 text-sm text-pencil">
-                Diawali UC, ada di URL channel: youtube.com/channel/UC…
+                Tempel URL channel, @handle, atau ID yang diawali UC.
               </p>
             </div>
 
