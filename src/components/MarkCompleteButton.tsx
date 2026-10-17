@@ -41,7 +41,7 @@ export function MarkCompleteButton({
 
   if (isCompleted) {
     return (
-      <p className="flex items-center gap-2 py-2 font-semibold text-pen" role="status">
+      <p className="flex items-center gap-2 rounded-full bg-pen-soft px-4 py-2 font-semibold text-pen" role="status">
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
         </svg>
@@ -54,7 +54,7 @@ export function MarkCompleteButton({
     <button
       onClick={handleMarkComplete}
       disabled={isLoading}
-      className="rounded-md bg-pen px-4 py-2 font-semibold text-paper hover:opacity-90 disabled:opacity-60"
+      className="rounded-full bg-pen px-4 py-2 font-semibold text-paper hover:opacity-90 disabled:opacity-60"
     >
       {isLoading ? "Menyimpan…" : "Tandai selesai"}
     </button>

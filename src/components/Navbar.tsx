@@ -8,8 +8,8 @@ export function Navbar() {
   const { data: session } = useSession();
 
   return (
-    <nav className="border-b border-rule bg-paper">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
+    <nav className="sticky top-0 z-40 border-b border-white/5 bg-paper/75 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         <Link
           href={session ? "/dashboard" : "/"}
           className="flex items-baseline gap-2.5"
@@ -44,7 +44,7 @@ export function Navbar() {
         ) : (
           <button
             onClick={() => signIn("google")}
-            className="rounded-md bg-pen px-3.5 py-1.5 text-sm font-semibold text-paper hover:opacity-90"
+            className="rounded-full bg-ink px-4 py-1.5 text-sm font-semibold text-paper hover:opacity-90"
           >
             Masuk
           </button>

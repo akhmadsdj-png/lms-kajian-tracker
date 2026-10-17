@@ -11,10 +11,19 @@ export async function getDashboardTutors() {
       id: true,
       name: true,
       slug: true,
+      imageUrl: true,
       playlists: {
-        select: { _count: { select: { videos: true } } },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          thumbnailUrl: true,
+          _count: { select: { videos: true } },
+        },
+        orderBy: { orderIndex: "asc" },
       },
     },
+    orderBy: { createdAt: "asc" },
   });
 }
 
@@ -28,7 +37,7 @@ export async function getDashboardUserProgress(userId: string) {
     select: {
       isCompleted: true,
       lastWatchedSeconds: true,
-      video: { select: { playlist: { select: { tutorId: true } } } },
+      video: { select: { playlistId: true, playlist: { select: { tutorId: true } } } },
     },
   });
 }
@@ -45,12 +54,14 @@ export async function getTutorPageData(tutorSlug: string) {
       name: true,
       bio: true,
       slug: true,
+      imageUrl: true,
       playlists: {
         select: {
           id: true,
           slug: true,
           title: true,
           description: true,
+          thumbnailUrl: true,
           _count: { select: { videos: true } },
         },
         orderBy: { orderIndex: "asc" },
@@ -86,9 +97,16 @@ export async function getPlaylistPageData(playlistSlug: string) {
       slug: true,
       title: true,
       description: true,
-      tutor: { select: { name: true, slug: true } },
+      thumbnailUrl: true,
+      tutor: { select: { name: true, slug: true, imageUrl: true } },
       videos: {
-        select: { id: true, title: true, orderIndex: true },
+        select: {
+          id: true,
+          title: true,
+          orderIndex: true,
+          youtubeVideoId: true,
+          durationSeconds: true,
+        },
         orderBy: { orderIndex: "asc" },
       },
     },
@@ -124,7 +142,7 @@ export async function getVideoPageData(videoId: string) {
           id: true,
           slug: true,
           title: true,
-          tutor: { select: { name: true, slug: true } },
+          tutor: { select: { name: true, slug: true, imageUrl: true } },
         },
       },
     },
@@ -138,7 +156,13 @@ export async function getSidebarVideos(playlistId: string) {
 
   return prisma.video.findMany({
     where: { playlistId },
-    select: { id: true, title: true, orderIndex: true },
+    select: {
+      id: true,
+      title: true,
+      orderIndex: true,
+      youtubeVideoId: true,
+      durationSeconds: true,
+    },
     orderBy: { orderIndex: "asc" },
   });
 }
@@ -148,9 +172,10 @@ export async function getContinueWatching(userId: string) {
   cacheLife({ stale: 30, revalidate: 60, expire: 600 });
   cacheTag("progress", `progress-${userId}`);
 
-  return prisma.userProgress.findFirst({
+  return prisma.userProgress.findMany({
     where: { userId, isCompleted: false, lastWatchedSeconds: { gt: 0 } },
     orderBy: { updatedAt: "desc" },
+    take: 12,
     select: {
       lastWatchedSeconds: true,
       video: {
@@ -158,6 +183,8 @@ export async function getContinueWatching(userId: string) {
           id: true,
           title: true,
           orderIndex: true,
+          youtubeVideoId: true,
+          durationSeconds: true,
           playlist: {
             select: {
               slug: true,

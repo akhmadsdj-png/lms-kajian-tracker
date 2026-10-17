@@ -33,3 +33,10 @@ jobs:
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: npx tsx scripts/sync-channel.ts
+
+      - name: Backfill durations and channel images
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: npx tsx scripts/backfill-youtube-meta.ts

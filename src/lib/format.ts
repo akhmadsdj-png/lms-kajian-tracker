@@ -14,3 +14,9 @@ export function formatTime(seconds: number): string {
 export function displayTitle(title: string): string {
   return title.replace(/\s*-\s*Ust\w*\.?\s.*$/i, "").trim() || title;
 }
+
+/** 352800 s → "98 jam", 2700 s → "45 menit" */
+export function formatTotalDuration(seconds: number): string {
+  const hours = Math.round(seconds / 3600);
+  return hours >= 1 ? `${hours} jam` : `${Math.max(1, Math.round(seconds / 60))} menit`;
+}

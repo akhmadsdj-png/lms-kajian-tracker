@@ -2,10 +2,10 @@ import { auth } from "@/lib/auth";
 import { displayTitle } from "@/lib/format";
 import { ScrollToActive } from "@/components/ScrollToActive";
 import { notFound } from "next/navigation";
-import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { YouTubePlayer } from "@/components/YouTubePlayer";
 import { MarkCompleteButton } from "@/components/MarkCompleteButton";
-import { VideoListItem } from "@/components/VideoListItem";
+import { Avatar } from "@/components/media/Avatar";
+import { VideoRow } from "@/components/media/VideoRow";
 import { MutabaahGrid, type VideoStatus } from "@/components/MutabaahGrid";
 import { LoginBanner } from "@/components/LoginBanner";
 import Link from "next/link";
@@ -64,88 +64,108 @@ export default async function VideoPage({
         : "unwatched";
     return { ...v, status };
   });
+  const completedCount = gridVideos.filter((v) => v.status === "completed").length;
 
   return (
     <>
       {!session?.user && <LoginBanner />}
 
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
-        <Breadcrumbs
-          items={[
-            { label: video.playlist.tutor.name, href: `/${tutorSlug}` },
-            { label: video.playlist.title, href: hrefBase },
-            { label: `Pertemuan ${video.orderIndex}` },
-          ]}
-        />
-
-        <div className="flex flex-col gap-10 lg:flex-row">
+      <div className="mx-auto max-w-[1600px] px-0 pb-16 sm:px-6 sm:pt-6">
+        <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
           <div className="min-w-0 flex-1">
-            <YouTubePlayer
-              videoId={video.youtubeVideoId}
-              dbVideoId={video.id}
-              startSeconds={startSeconds}
-            />
+            <div className="sm:overflow-hidden sm:rounded-xl">
+              <YouTubePlayer
+                videoId={video.youtubeVideoId}
+                dbVideoId={video.id}
+                startSeconds={startSeconds}
+              />
+            </div>
 
-            <p className="mt-6 text-pencil tabular-nums">
-              Pertemuan {video.orderIndex} dari {sidebarVideos.length}
-            </p>
-            <h1 className="mt-1 max-w-3xl text-2xl sm:text-3xl">{displayTitle(video.title)}</h1>
+            <div className="px-4 sm:px-0">
+              <h1 className="mt-4 font-sans text-xl font-bold leading-snug sm:text-2xl">
+                {displayTitle(video.title)}
+              </h1>
 
-            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-4">
-              {session?.user ? (
-                <MarkCompleteButton videoId={video.id} initialCompleted={isCompleted} />
-              ) : (
-                <Link
-                  href="/api/auth/signin"
-                  className="rounded-md border border-rule px-4 py-2 font-semibold hover:bg-surface"
-                >
-                  Masuk untuk menandai selesai
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+                <Link href={`/${tutorSlug}`} className="group flex items-center gap-3">
+                  <Avatar src={video.playlist.tutor.imageUrl} name={video.playlist.tutor.name} size={40} />
+                  <span>
+                    <span className="block font-semibold group-hover:underline">{video.playlist.tutor.name}</span>
+                    <span className="block text-sm tabular-nums text-pencil">
+                      Pertemuan {video.orderIndex} dari {sidebarVideos.length}
+                    </span>
+                  </span>
                 </Link>
-              )}
 
-              <div className="flex gap-5 sm:ml-auto">
-                {prevVideo && (
-                  <Link href={`${hrefBase}/${prevVideo.id}`} className="text-pen hover:underline underline-offset-4">
-                    Pertemuan {prevVideo.orderIndex}
-                  </Link>
-                )}
-                {nextVideo && (
-                  <Link href={`${hrefBase}/${nextVideo.id}`} className="font-semibold text-pen hover:underline underline-offset-4">
-                    Berikutnya: pertemuan {nextVideo.orderIndex}
-                  </Link>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  {session?.user ? (
+                    <MarkCompleteButton videoId={video.id} initialCompleted={isCompleted} />
+                  ) : (
+                    <Link
+                      href="/api/auth/signin"
+                      className="rounded-full bg-raised px-4 py-2 font-semibold hover:bg-rule"
+                    >
+                      Masuk untuk menandai selesai
+                    </Link>
+                  )}
+                  {prevVideo && (
+                    <Link
+                      href={`${hrefBase}/${prevVideo.id}`}
+                      className="rounded-full bg-raised px-4 py-2 font-semibold hover:bg-rule"
+                      aria-label={`Pertemuan sebelumnya, ${prevVideo.orderIndex}`}
+                    >
+                      Sebelumnya
+                    </Link>
+                  )}
+                  {nextVideo && (
+                    <Link
+                      href={`${hrefBase}/${nextVideo.id}`}
+                      className="rounded-full bg-ink px-4 py-2 font-semibold text-paper hover:opacity-90"
+                    >
+                      Berikutnya
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          <aside className="w-full shrink-0 lg:w-80 xl:w-96">
-            <h2 className="text-lg">
-              <Link href={hrefBase} className="hover:underline underline-offset-4">
-                {video.playlist.title}
-              </Link>
-            </h2>
-            <div className="mt-3 mb-6">
-              <MutabaahGrid videos={gridVideos} hrefBase={hrefBase} activeId={video.id} compact />
-            </div>
-            <ScrollToActive className="max-h-[60vh] overflow-y-auto border-t border-rule">
-              {sidebarVideos.map((v) => {
-                const vProgress = sidebarProgressMap.get(v.id);
-                return (
-                  <li key={v.id}>
-                    <VideoListItem
+          <aside className="w-full shrink-0 px-2 sm:px-0 lg:w-[400px]">
+            <div className="overflow-hidden rounded-xl border border-rule">
+              <div className="bg-surface px-4 py-3">
+                <Link href={hrefBase} className="line-clamp-1 font-bold hover:underline">
+                  {video.playlist.title}
+                </Link>
+                <p className="mt-0.5 text-sm tabular-nums text-pencil">
+                  {video.playlist.tutor.name}, {video.orderIndex}/{sidebarVideos.length}
+                  {userId && `, ${completedCount} selesai`}
+                </p>
+                {userId && (
+                  <div className="mt-3">
+                    <MutabaahGrid videos={gridVideos} hrefBase={hrefBase} activeId={video.id} compact />
+                  </div>
+                )}
+              </div>
+              <ScrollToActive className="max-h-[70vh] space-y-0.5 overflow-y-auto p-1.5">
+                {gridVideos.map((v) => {
+                  const p = sidebarProgressMap.get(v.id);
+                  return (
+                    <VideoRow
+                      key={v.id}
+                      compact
+                      href={`${hrefBase}/${v.id}`}
                       title={v.title}
-                      videoId={v.id}
                       orderIndex={v.orderIndex}
-                      playlistSlug={playlistSlug}
-                      tutorSlug={tutorSlug}
-                      lastWatchedSeconds={vProgress?.lastWatchedSeconds ?? 0}
-                      isCompleted={vProgress?.isCompleted ?? false}
+                      youtubeVideoId={v.youtubeVideoId}
+                      durationSeconds={v.durationSeconds}
+                      watchedSeconds={p?.lastWatchedSeconds ?? 0}
+                      isCompleted={p?.isCompleted ?? false}
                       isActive={v.id === videoId}
                     />
-                  </li>
-                );
-              })}
-            </ScrollToActive>
+                  );
+                })}
+              </ScrollToActive>
+            </div>
           </aside>
         </div>
       </div>

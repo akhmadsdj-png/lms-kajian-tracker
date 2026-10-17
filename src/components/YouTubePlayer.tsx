@@ -119,7 +119,7 @@ export function YouTubePlayer({
   }, [videoId, startSeconds, saveProgress]);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-md bg-black">
+    <div className="relative w-full overflow-hidden bg-black">
       <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
         <div
           id={containerRef.current}

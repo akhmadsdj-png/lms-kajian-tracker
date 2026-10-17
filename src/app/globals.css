@@ -1,17 +1,19 @@
 @import "tailwindcss";
 
 /*
-  Palette: a santri's mutaba'ah card — cool paper, pencil grey,
-  and blue pen ink for every tick. One accent, no gradients.
+  Dark, artwork-first media theme (YouTube / Spotify / Apple TV feel).
+  Thumbnails carry the colour; the UI stays neutral with one periwinkle
+  "pen" accent carried over from the mutaba'ah ticks.
 */
 @theme {
-  --color-paper: #f7f8f5;
-  --color-surface: #eef0ea;
-  --color-ink: #1d2420;
-  --color-pencil: #5e6660;
-  --color-rule: #d9ddd5;
-  --color-pen: #24479a;
-  --color-pen-soft: #d6def0;
+  --color-paper: #0e1116;
+  --color-surface: #171b22;
+  --color-raised: #212732;
+  --color-ink: #f2f4f7;
+  --color-pencil: #9aa3b2;
+  --color-rule: #2a303b;
+  --color-pen: #8fa8ff;
+  --color-pen-soft: #26304d;
 
   --font-serif: var(--font-literata), Georgia, serif;
   --font-sans: var(--font-source-sans), system-ui, sans-serif;
@@ -19,20 +21,8 @@
 }
 
 @layer base {
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --color-paper: #151a17;
-      --color-surface: #1e2420;
-      --color-ink: #e6e9e3;
-      --color-pencil: #9aa39c;
-      --color-rule: #333a35;
-      --color-pen: #93abee;
-      --color-pen-soft: #2a3555;
-    }
-  }
-
   html {
-    color-scheme: light dark;
+    color-scheme: dark;
   }
 
   body {
@@ -55,6 +45,14 @@
   a,
   button {
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Horizontal shelves scroll without a visible scrollbar */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 
   :focus-visible {
