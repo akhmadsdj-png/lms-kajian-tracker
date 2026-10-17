@@ -79,9 +79,11 @@ model Playlist {
   title        String
   description  String?
   thumbnailUrl String?
-  orderIndex   Int      @default(0)
-  videos       Video[]
-  createdAt    DateTime @default(now())
+  youtubePlaylistId String?  @unique
+  orderIndex        Int      @default(0)
+  youtubeVideoCount Int      @default(0)
+  videos            Video[]
+  createdAt         DateTime @default(now())
 
   @@index([tutorId])
 }

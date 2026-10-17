@@ -7,6 +7,11 @@ on:
   # Memungkinkan kita memicu script ini secara manual dari tombol di GitHub
   workflow_dispatch:
 
+# A long first sync must not overlap the next scheduled one; the newer run waits.
+concurrency:
+  group: youtube-sync
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
