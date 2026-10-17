@@ -1,17 +1,29 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Amiri, Literata, Source_Sans_3 } from "next/font/google";
 import { SessionProvider } from "@/components/SessionProvider";
 import { Navbar } from "@/components/Navbar";
 import { Suspense } from "react";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const literata = Literata({
+  variable: "--font-literata",
   subsets: ["latin"],
 });
 
+const sourceSans = Source_Sans_3({
+  variable: "--font-source-sans",
+  subsets: ["latin"],
+});
+
+// Only used for the ك mark
+const amiri = Amiri({
+  variable: "--font-amiri",
+  subsets: ["arabic"],
+  weight: "700",
+});
+
 export const metadata: Metadata = {
-  title: "Kajian Tracker — Lacak Progress Kajian Islam",
+  title: "Kajian Tracker",
   description:
     "Platform LMS pribadi untuk melacak progres belajar dari playlist kajian YouTube Ustadz Firanda Andirja dan ulama lainnya.",
 };
@@ -22,8 +34,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-[family-name:var(--font-inter)]">
+    <html lang="id" className={`${literata.variable} ${sourceSans.variable} ${amiri.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col">
         <Suspense>
           <SessionProvider>
             <Navbar />

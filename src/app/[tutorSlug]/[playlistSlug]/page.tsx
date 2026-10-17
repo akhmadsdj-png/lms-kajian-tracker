@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { VideoListItem } from "@/components/VideoListItem";
+import { MutabaahGrid, type VideoStatus } from "@/components/MutabaahGrid";
+import Link from "next/link";
 import { getPlaylistPageData, getPlaylistProgress } from "@/lib/queries";
 import { connection } from "next/server";
 
@@ -26,77 +28,70 @@ export default async function PlaylistPage({
     progressRows.map((r) => [r.videoId, r])
   );
 
-  let completedCount = 0;
-  for (const v of playlist.videos) {
-    if (progressMap.get(v.id)?.isCompleted) completedCount++;
-  }
-  const progressPercent =
-    playlist.videos.length > 0
-      ? Math.round((completedCount / playlist.videos.length) * 100)
-      : 0;
+  const videos = playlist.videos.map((v) => {
+    const p = progressMap.get(v.id);
+    const status: VideoStatus = p?.isCompleted
+      ? "completed"
+      : p && p.lastWatchedSeconds > 0
+        ? "in-progress"
+        : "unwatched";
+    return { ...v, status, lastWatchedSeconds: p?.lastWatchedSeconds ?? 0 };
+  });
+  const completedCount = videos.filter((v) => v.status === "completed").length;
+  const nextVideo = videos.find((v) => v.status !== "completed");
+  const hrefBase = `/${tutorSlug}/${playlistSlug}`;
 
   return (
-    <div className="relative min-h-[calc(100vh-57px)]">
-      <div className="bg-grid pointer-events-none absolute inset-0" />
-      <div className="pointer-events-none absolute right-1/4 top-0 h-[300px] w-[300px] rounded-full bg-emerald-500/[0.05] blur-[100px]" />
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+      <Breadcrumbs
+        items={[
+          { label: playlist.tutor.name, href: `/${tutorSlug}` },
+          { label: playlist.title },
+        ]}
+      />
 
-      <div className="relative mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
-        <Breadcrumbs
-          items={[
-            { label: playlist.tutor.name, href: `/${tutorSlug}` },
-            { label: playlist.title },
-          ]}
-        />
+      <header className="mb-8 max-w-2xl">
+        <h1 className="text-3xl sm:text-4xl">{playlist.title}</h1>
+        {playlist.description && (
+          <p className="mt-3 line-clamp-4 text-pencil">{playlist.description}</p>
+        )}
+      </header>
 
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="mb-2 text-2xl font-bold text-white sm:text-3xl">
-            {playlist.title}
-          </h1>
-          {playlist.description && (
-            <p className="mb-4 text-sm text-slate-400">
-              {playlist.description}
-            </p>
+      <section className="mb-12" aria-labelledby="progress-heading">
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3">
+          <h2 id="progress-heading" className="text-xl tabular-nums">
+            {completedCount} dari {videos.length} pertemuan selesai
+          </h2>
+          {nextVideo && (
+            <Link
+              href={`${hrefBase}/${nextVideo.id}`}
+              className="rounded-md bg-pen px-4 py-2 font-semibold text-paper hover:opacity-90"
+            >
+              {completedCount === 0 && nextVideo.status === "unwatched"
+                ? "Mulai dari pertemuan 1"
+                : `Lanjutkan pertemuan ${nextVideo.orderIndex}`}
+            </Link>
           )}
-
-          {/* Overall progress */}
-          <div className="glass-card rounded-xl p-4">
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-slate-400">
-                {completedCount} dari {playlist.videos.length} video selesai
-              </span>
-              <span className="font-semibold text-emerald-400">
-                {progressPercent}%
-              </span>
-            </div>
-            <div className="relative h-2 overflow-hidden rounded-full bg-slate-700/50">
-              <div
-                className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-700"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
         </div>
+        <MutabaahGrid videos={videos} hrefBase={hrefBase} />
+      </section>
 
-        {/* Video List */}
-        <div className="space-y-2">
-          {playlist.videos.map((video) => {
-            const progress = progressMap.get(video.id);
-            return (
-              <VideoListItem
-                key={video.id}
-                title={video.title}
-                videoId={video.id}
-                orderIndex={video.orderIndex}
-                playlistSlug={playlistSlug}
-                tutorSlug={tutorSlug}
-                lastWatchedSeconds={progress?.lastWatchedSeconds ?? 0}
-                isCompleted={progress?.isCompleted ?? false}
-              />
-            );
-          })}
-        </div>
-      </div>
+      <h2 className="mb-2 text-xl">Daftar pertemuan</h2>
+      <ul className="border-t border-rule">
+        {videos.map((video) => (
+          <li key={video.id}>
+            <VideoListItem
+              title={video.title}
+              videoId={video.id}
+              orderIndex={video.orderIndex}
+              playlistSlug={playlistSlug}
+              tutorSlug={tutorSlug}
+              lastWatchedSeconds={video.lastWatchedSeconds}
+              isCompleted={video.status === "completed"}
+            />
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -1,8 +1,12 @@
 import { auth } from "@/lib/auth";
-import Image from "next/image";
 import Link from "next/link";
 import { LoginBanner } from "@/components/LoginBanner";
-import { getDashboardTutors, getDashboardUserProgress } from "@/lib/queries";
+import {
+  getContinueWatching,
+  getDashboardTutors,
+  getDashboardUserProgress,
+} from "@/lib/queries";
+import { displayTitle, formatTime } from "@/lib/format";
 import { connection } from "next/server";
 
 export default async function DashboardPage() {
@@ -10,155 +14,79 @@ export default async function DashboardPage() {
   const session = await auth();
   const userId = session?.user?.id;
 
-  // Fetch cached tutor data (no user-specific fields)
-  const tutors = await getDashboardTutors();
+  const [tutors, progressRows, resume] = await Promise.all([
+    getDashboardTutors(),
+    userId ? getDashboardUserProgress(userId) : Promise.resolve([]),
+    userId ? getContinueWatching(userId) : Promise.resolve(null),
+  ]);
 
-  // Fetch cached user progress separately (only if logged in)
-  const progressRows = userId ? await getDashboardUserProgress(userId) : [];
-
-  // Compute stats from counts + progress rows (no per-video data needed)
-  let totalVideos = 0;
-  for (const tutor of tutors) {
-    for (const playlist of tutor.playlists) totalVideos += playlist._count.videos;
-  }
-
-  let completedVideos = 0;
-  let inProgressVideos = 0;
   const completedByTutor = new Map<string, number>();
   for (const r of progressRows) {
-    if (r.isCompleted) {
-      completedVideos++;
-      const tutorId = r.video.playlist.tutorId;
-      completedByTutor.set(tutorId, (completedByTutor.get(tutorId) ?? 0) + 1);
-    } else if (r.lastWatchedSeconds > 0) {
-      inProgressVideos++;
-    }
+    if (!r.isCompleted) continue;
+    const tutorId = r.video.playlist.tutorId;
+    completedByTutor.set(tutorId, (completedByTutor.get(tutorId) ?? 0) + 1);
   }
 
+  const firstName = session?.user?.name?.split(" ")[0];
+
   return (
-    <div className="relative min-h-[calc(100vh-57px)]">
-      {/* Login Banner for guests */}
+    <>
       {!session?.user && <LoginBanner />}
 
-      {/* Background */}
-      <div className="bg-grid pointer-events-none absolute inset-0" />
-      <div className="pointer-events-none absolute right-0 top-0 h-[400px] w-[400px] rounded-full bg-emerald-500/[0.05] blur-[100px]" />
-
-      <div className="relative mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-        {/* Greeting */}
-        <div className="mb-10">
-          <div className="flex items-center gap-4 mb-2">
-            {session?.user?.image ? (
-              <Image
-                src={session.user.image}
-                alt={session.user.name ?? "User"}
-                width={48}
-                height={48}
-                className="rounded-xl ring-2 ring-emerald-500/20"
-              />
-            ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 text-xl ring-2 ring-white/10">
-                👤
-              </div>
-            )}
-            <div>
-              <p className="text-sm text-slate-500">Assalamu&apos;alaikum,</p>
-              <h1 className="text-2xl font-bold text-white sm:text-3xl">
-                {session?.user?.name ?? "Tamu"} 👋
-              </h1>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="mb-10 grid grid-cols-3 gap-3 sm:gap-4">
-          {[
-            {
-              label: "Total Video",
-              value: totalVideos,
-              color: "text-slate-300",
-              bg: "from-slate-800 to-slate-900",
-            },
-            {
-              label: "Selesai",
-              value: completedVideos,
-              color: "text-emerald-400",
-              bg: "from-emerald-950/50 to-slate-900",
-            },
-            {
-              label: "Berlangsung",
-              value: inProgressVideos,
-              color: "text-amber-400",
-              bg: "from-amber-950/30 to-slate-900",
-            },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className={`rounded-2xl border border-white/[0.06] bg-gradient-to-br ${stat.bg} p-4 sm:p-5`}
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+        {resume ? (
+          <section className="mb-14 max-w-2xl border-l-4 border-pen pl-5">
+            <p className="text-pencil">Terakhir kamu tonton</p>
+            <h1 className="mt-1 text-2xl sm:text-3xl">{displayTitle(resume.video.title)}</h1>
+            <p className="mt-2 text-pencil">
+              Pertemuan {resume.video.orderIndex} dari {resume.video.playlist._count.videos},{" "}
+              {resume.video.playlist.title}, {resume.video.playlist.tutor.name}
+            </p>
+            <Link
+              href={`/${resume.video.playlist.tutor.slug}/${resume.video.playlist.slug}/${resume.video.id}`}
+              className="mt-5 inline-block rounded-md bg-pen px-4 py-2 font-semibold tabular-nums text-paper hover:opacity-90"
             >
-              <p className={`text-2xl font-bold sm:text-3xl ${stat.color}`}>
-                {stat.value}
-              </p>
-              <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
+              Lanjutkan dari {formatTime(resume.lastWatchedSeconds)}
+            </Link>
+          </section>
+        ) : (
+          <section className="mb-14 max-w-2xl">
+            <h1 className="text-2xl sm:text-3xl">
+              {firstName ? `Assalamu'alaikum, ${firstName}` : "Pilih kajian"}
+            </h1>
+            <p className="mt-2 text-pencil">
+              {userId
+                ? "Pilih pengajar dan playlist untuk mulai. Posisi tonton tersimpan otomatis."
+                : "Masuk untuk menyimpan posisi tonton dan menandai pertemuan yang sudah selesai."}
+            </p>
+          </section>
+        )}
 
-        {/* Tutors */}
-        <h2 className="mb-6 text-xl font-semibold text-white">
-          Pengajar
-        </h2>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <h2 className="mb-2 text-xl">Pengajar</h2>
+        <ul className="border-t border-rule">
           {tutors.map((tutor) => {
-            let tutorTotalVideos = 0;
-            for (const p of tutor.playlists) tutorTotalVideos += p._count.videos;
-            const tutorCompletedVideos = completedByTutor.get(tutor.id) ?? 0;
-            const tutorProgress =
-              tutorTotalVideos > 0
-                ? Math.round((tutorCompletedVideos / tutorTotalVideos) * 100)
-                : 0;
+            const total = tutor.playlists.reduce((n, p) => n + p._count.videos, 0);
+            const completed = completedByTutor.get(tutor.id) ?? 0;
 
             return (
-              <Link
-                key={tutor.id}
-                href={`/${tutor.slug}`}
-                className="group block"
-              >
-                <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-slate-800/80 to-slate-900/80 p-6 shadow-xl transition-all duration-300 hover:border-emerald-500/20 hover:shadow-emerald-500/5 hover:-translate-y-1">
-                  <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-500/[0.08] blur-2xl transition-all duration-500 group-hover:bg-emerald-500/[0.15]" />
-
-                  <div className="relative">
-                    <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-2xl">
-                      🕌
-                    </div>
-                    <h3 className="mb-1 text-lg font-semibold text-white transition-colors group-hover:text-emerald-400">
-                      {tutor.name}
-                    </h3>
-                    <p className="mb-4 text-sm text-slate-500">
-                      {tutor.playlists.length} playlist •{" "}
-                      {tutorTotalVideos} video
-                    </p>
-
-                    {/* Progress bar */}
-                    <div className="relative h-1.5 overflow-hidden rounded-full bg-slate-700/50">
-                      <div
-                        className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-700"
-                        style={{ width: `${tutorProgress}%` }}
-                      />
-                    </div>
-                    <p className="mt-2 text-right text-xs font-medium text-emerald-400">
-                      {userId ? `${tutorProgress}%` : "Login untuk melihat progres"}
-                    </p>
-                  </div>
-                </div>
-              </Link>
+              <li key={tutor.id}>
+                <Link
+                  href={`/${tutor.slug}`}
+                  className="flex flex-col gap-0.5 border-b border-rule px-2 py-4 hover:bg-surface sm:flex-row sm:items-baseline sm:justify-between"
+                >
+                  <span className="font-serif text-lg font-semibold">{tutor.name}</span>
+                  <span className="text-sm tabular-nums text-pencil">
+                    {tutor.playlists.length === 0
+                      ? "Belum ada playlist"
+                      : `${tutor.playlists.length} playlist, ${total.toLocaleString("id-ID")} pertemuan`}
+                    {userId && completed > 0 && `, ${completed} selesai`}
+                  </span>
+                </Link>
+              </li>
             );
           })}
-        </div>
+        </ul>
       </div>
-    </div>
+    </>
   );
 }

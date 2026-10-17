@@ -22,98 +22,76 @@ export default async function AdminPage() {
     },
   });
 
+  const inputClass =
+    "w-full rounded-md border border-rule bg-paper px-3 py-2 placeholder:text-pencil/70 focus:border-pen focus:outline-none";
+
   return (
-    <div className="relative min-h-[calc(100vh-57px)]">
-      <div className="bg-grid pointer-events-none absolute inset-0" />
-      
-      <div className="relative mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
-        <h1 className="mb-8 text-2xl font-bold text-white sm:text-3xl">
-          ⚙️ Admin Panel
-        </h1>
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+      <h1 className="mb-10 text-3xl">Kelola pengajar</h1>
 
-        <div className="grid gap-8 md:grid-cols-3">
-          {/* Form */}
-          <div className="md:col-span-1">
-            <div className="glass-card rounded-2xl p-5">
-              <h2 className="mb-4 text-lg font-semibold text-white">
-                Tambah Ustadz
-              </h2>
-              
-              <form action={addTutorAction} className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-slate-400 mb-1">
-                    Nama Ustadz
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    required
-                    placeholder="Contoh: Ustadz Syafiq Riza Basalamah"
-                    className="w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="youtubeChannelId" className="block text-sm font-medium text-slate-400 mb-1">
-                    YouTube Channel ID
-                  </label>
-                  <input
-                    type="text"
-                    id="youtubeChannelId"
-                    name="youtubeChannelId"
-                    required
-                    placeholder="Contoh: UCxxx..."
-                    className="w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
-                  />
-                  <p className="mt-1.5 text-xs text-slate-500">
-                    ID Channel YouTube bisa didapatkan dari URL channel.
-                  </p>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-emerald-500"
-                >
-                  Simpan & Tambahkan
-                </button>
-              </form>
+      <div className="grid gap-12 md:grid-cols-[18rem_1fr]">
+        <section>
+          <h2 className="mb-4 text-xl">Tambah pengajar</h2>
+          <form action={addTutorAction} className="space-y-5">
+            <div>
+              <label htmlFor="name" className="mb-1 block font-semibold">
+                Nama
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                required
+                placeholder="Ustadz Syafiq Riza Basalamah"
+                className={inputClass}
+              />
             </div>
-          </div>
 
-          {/* List */}
-          <div className="md:col-span-2">
-            <div className="glass-card rounded-2xl p-5">
-              <h2 className="mb-4 text-lg font-semibold text-white">
-                Daftar Ustadz ({tutors.length})
-              </h2>
-              
-              <div className="space-y-3">
-                {tutors.map((tutor) => (
-                  <div
-                    key={tutor.id}
-                    className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] p-4"
-                  >
-                    <div>
-                      <h3 className="font-medium text-white">{tutor.name}</h3>
-                      <div className="mt-1 flex items-center gap-3 text-xs text-slate-400">
-                        <span>ID: {tutor.youtubeChannelId || "-"}</span>
-                        <span>•</span>
-                        <span>{tutor._count.playlists} Playlist tersinkronisasi</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {tutors.length === 0 && (
-                  <p className="py-4 text-center text-sm text-slate-500">
-                    Belum ada ustadz yang ditambahkan.
-                  </p>
-                )}
-              </div>
+            <div>
+              <label htmlFor="youtubeChannelId" className="mb-1 block font-semibold">
+                ID channel YouTube
+              </label>
+              <input
+                type="text"
+                id="youtubeChannelId"
+                name="youtubeChannelId"
+                required
+                placeholder="UC…"
+                className={inputClass}
+              />
+              <p className="mt-1.5 text-sm text-pencil">
+                Diawali UC, ada di URL channel: youtube.com/channel/UC…
+              </p>
             </div>
-          </div>
-        </div>
+
+            <button
+              type="submit"
+              className="rounded-md bg-pen px-4 py-2 font-semibold text-paper hover:opacity-90"
+            >
+              Tambah pengajar
+            </button>
+          </form>
+        </section>
+
+        <section>
+          <h2 className="mb-2 text-xl">{tutors.length} pengajar</h2>
+          {tutors.length === 0 ? (
+            <p className="border-t border-rule py-4 text-pencil">
+              Belum ada pengajar. Tambahkan lewat formulir di samping.
+            </p>
+          ) : (
+            <ul className="border-t border-rule">
+              {tutors.map((tutor) => (
+                <li key={tutor.id} className="border-b border-rule px-2 py-3">
+                  <p className="font-semibold">{tutor.name}</p>
+                  <p className="text-sm text-pencil">
+                    {tutor._count.playlists} playlist tersinkron, channel {tutor.youtubeChannelId || "belum diisi"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </div>
   );

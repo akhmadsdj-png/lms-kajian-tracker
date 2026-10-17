@@ -6,41 +6,22 @@ interface BreadcrumbItem {
 }
 
 export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
+  const trail = [{ label: "Beranda", href: "/dashboard" }, ...items];
+
   return (
-    <nav aria-label="Breadcrumb" className="mb-6">
-      <ol className="flex flex-wrap items-center gap-1.5 text-sm">
-        <li>
-          <Link
-            href="/dashboard"
-            className="text-slate-500 transition-colors hover:text-emerald-400"
-          >
-            Beranda
-          </Link>
-        </li>
-        {items.map((item, index) => (
-          <li key={index} className="flex items-center gap-1.5">
-            <svg
-              className="h-3.5 w-3.5 text-slate-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8.25 4.5l7.5 7.5-7.5 7.5"
-              />
-            </svg>
+    <nav aria-label="Breadcrumb" className="mb-6 text-sm">
+      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-pencil">
+        {trail.map((item, index) => (
+          <li key={index} className="flex min-w-0 items-center gap-2">
+            {index > 0 && <span aria-hidden>/</span>}
             {item.href ? (
-              <Link
-                href={item.href}
-                className="text-slate-500 transition-colors hover:text-emerald-400"
-              >
+              <Link href={item.href} className="hover:text-ink hover:underline underline-offset-4">
                 {item.label}
               </Link>
             ) : (
-              <span className="font-medium text-slate-300">{item.label}</span>
+              <span className="truncate text-ink" aria-current="page">
+                {item.label}
+              </span>
             )}
           </li>
         ))}

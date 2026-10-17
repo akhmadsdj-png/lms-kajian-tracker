@@ -1,64 +1,74 @@
 @import "tailwindcss";
 
+/*
+  Palette: a santri's mutaba'ah card — cool paper, pencil grey,
+  and blue pen ink for every tick. One accent, no gradients.
+*/
+@theme {
+  --color-paper: #f7f8f5;
+  --color-surface: #eef0ea;
+  --color-ink: #1d2420;
+  --color-pencil: #5e6660;
+  --color-rule: #d9ddd5;
+  --color-pen: #24479a;
+  --color-pen-soft: #d6def0;
+
+  --font-serif: var(--font-literata), Georgia, serif;
+  --font-sans: var(--font-source-sans), system-ui, sans-serif;
+  --font-arabic: var(--font-amiri), serif;
+}
+
 @layer base {
-  :root {
-    --color-bg-primary: #0b1120;
-    --color-bg-secondary: #0f172a;
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-paper: #151a17;
+      --color-surface: #1e2420;
+      --color-ink: #e6e9e3;
+      --color-pencil: #9aa39c;
+      --color-rule: #333a35;
+      --color-pen: #93abee;
+      --color-pen-soft: #2a3555;
+    }
+  }
+
+  html {
+    color-scheme: light dark;
   }
 
   body {
-    background-color: var(--color-bg-primary);
-    color: #e2e8f0;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.55;
   }
 
-  /* Custom scrollbar */
-  ::-webkit-scrollbar {
-    width: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #334155;
-    border-radius: 3px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #475569;
-  }
-}
-
-@layer utilities {
-  /* Animated gradient text */
-  .text-gradient {
-    background: linear-gradient(135deg, #10b981, #14b8a6, #06b6d4);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    line-height: 1.2;
+    text-wrap: balance;
   }
 
-  /* Glass card effect */
-  .glass-card {
-    background: linear-gradient(
-      135deg,
-      rgba(15, 23, 42, 0.8),
-      rgba(15, 23, 42, 0.4)
-    );
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+  a,
+  button {
+    -webkit-tap-highlight-color: transparent;
   }
 
-  /* Background grid pattern */
-  .bg-grid {
-    background-image: linear-gradient(
-        rgba(255, 255, 255, 0.03) 1px,
-        transparent 1px
-      ),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
+  :focus-visible {
+    outline: 2px solid var(--color-pen);
+    outline-offset: 2px;
+    border-radius: 2px;
   }
 
-  /* Glow effect */
-  .glow-emerald {
-    box-shadow: 0 0 60px -12px rgba(16, 185, 129, 0.15);
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
   }
 }

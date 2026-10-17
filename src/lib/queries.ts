@@ -142,3 +142,32 @@ export async function getSidebarVideos(playlistId: string) {
     orderBy: { orderIndex: "asc" },
   });
 }
+
+export async function getContinueWatching(userId: string) {
+  "use cache";
+  cacheLife({ stale: 30, revalidate: 60, expire: 600 });
+  cacheTag("progress", `progress-${userId}`);
+
+  return prisma.userProgress.findFirst({
+    where: { userId, isCompleted: false, lastWatchedSeconds: { gt: 0 } },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      lastWatchedSeconds: true,
+      video: {
+        select: {
+          id: true,
+          title: true,
+          orderIndex: true,
+          playlist: {
+            select: {
+              slug: true,
+              title: true,
+              _count: { select: { videos: true } },
+              tutor: { select: { name: true, slug: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+}

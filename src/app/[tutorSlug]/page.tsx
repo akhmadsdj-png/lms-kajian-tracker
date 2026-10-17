@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { PlaylistCard } from "@/components/PlaylistCard";
+import { PlaylistRow } from "@/components/PlaylistRow";
 import { getTutorPageData, getTutorProgress } from "@/lib/queries";
 import { connection } from "next/server";
 
@@ -31,54 +31,40 @@ export default async function TutorPage({
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-57px)]">
-      <div className="bg-grid pointer-events-none absolute inset-0" />
-      <div className="pointer-events-none absolute left-1/4 top-0 h-[300px] w-[300px] rounded-full bg-emerald-500/[0.05] blur-[100px]" />
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+      <Breadcrumbs items={[{ label: tutor.name }]} />
 
-      <div className="relative mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-        <Breadcrumbs items={[{ label: tutor.name }]} />
+      <header className="mb-10 max-w-2xl">
+        <h1 className="text-3xl sm:text-4xl">{tutor.name}</h1>
+        {tutor.bio && <p className="mt-3 text-pencil">{tutor.bio}</p>}
+      </header>
 
-        {/* Header */}
-        <div className="mb-10">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-3xl shadow-lg">
-              🕌
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white sm:text-3xl">
-                {tutor.name}
-              </h1>
-              {tutor.bio && (
-                <p className="mt-1 text-sm text-slate-400">{tutor.bio}</p>
-              )}
-            </div>
-          </div>
-        </div>
+      <h2 className="mb-2 text-xl">
+        {tutor.playlists.length} playlist
+      </h2>
 
-        {/* Playlists Grid */}
-        <h2 className="mb-6 text-lg font-semibold text-white">
-          Daftar Playlist Kajian
-        </h2>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {tutor.playlists.length === 0 ? (
+        <p className="border-t border-rule py-4 text-pencil">
+          Playlist muncul di sini setelah sinkronisasi harian dari YouTube berjalan.
+        </p>
+      ) : (
+        <ul className="border-t border-rule">
           {tutor.playlists.map((playlist) => {
             const counts = progressByPlaylist.get(playlist.id);
-
             return (
-              <PlaylistCard
+              <PlaylistRow
                 key={playlist.id}
                 title={playlist.title}
                 description={playlist.description}
-                slug={playlist.slug}
-                tutorSlug={tutor.slug}
+                href={`/${tutor.slug}/${playlist.slug}`}
                 totalVideos={playlist._count.videos}
                 completedVideos={counts?.completed ?? 0}
                 inProgressVideos={counts?.inProgress ?? 0}
               />
             );
           })}
-        </div>
-      </div>
+        </ul>
+      )}
     </div>
   );
 }
