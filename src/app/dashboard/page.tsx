@@ -14,32 +14,24 @@ export default async function DashboardPage() {
   const tutors = await getDashboardTutors();
 
   // Fetch cached user progress separately (only if logged in)
-  const progressMap = userId
-    ? await getDashboardUserProgress(userId).then((rows) => {
-        const map = new Map<string, { isCompleted: boolean; lastWatchedSeconds: number }>();
-        for (const r of rows) map.set(r.videoId, r);
-        return map;
-      })
-    : null;
+  const progressRows = userId ? await getDashboardUserProgress(userId) : [];
 
-  // Compute stats
+  // Compute stats from counts + progress rows (no per-video data needed)
   let totalVideos = 0;
+  for (const tutor of tutors) {
+    for (const playlist of tutor.playlists) totalVideos += playlist._count.videos;
+  }
+
   let completedVideos = 0;
   let inProgressVideos = 0;
-
-  for (const tutor of tutors) {
-    for (const playlist of tutor.playlists) {
-      for (const video of playlist.videos) {
-        totalVideos++;
-        if (progressMap) {
-          const p = progressMap.get(video.id);
-          if (p?.isCompleted) {
-            completedVideos++;
-          } else if (p && p.lastWatchedSeconds > 0) {
-            inProgressVideos++;
-          }
-        }
-      }
+  const completedByTutor = new Map<string, number>();
+  for (const r of progressRows) {
+    if (r.isCompleted) {
+      completedVideos++;
+      const tutorId = r.video.playlist.tutorId;
+      completedByTutor.set(tutorId, (completedByTutor.get(tutorId) ?? 0) + 1);
+    } else if (r.lastWatchedSeconds > 0) {
+      inProgressVideos++;
     }
   }
 
@@ -122,16 +114,8 @@ export default async function DashboardPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {tutors.map((tutor) => {
             let tutorTotalVideos = 0;
-            let tutorCompletedVideos = 0;
-            for (const p of tutor.playlists) {
-              for (const v of p.videos) {
-                tutorTotalVideos++;
-                if (progressMap) {
-                  const prog = progressMap.get(v.id);
-                  if (prog?.isCompleted) tutorCompletedVideos++;
-                }
-              }
-            }
+            for (const p of tutor.playlists) tutorTotalVideos += p._count.videos;
+            const tutorCompletedVideos = completedByTutor.get(tutor.id) ?? 0;
             const tutorProgress =
               tutorTotalVideos > 0
                 ? Math.round((tutorCompletedVideos / tutorTotalVideos) * 100)

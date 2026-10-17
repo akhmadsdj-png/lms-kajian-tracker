@@ -22,9 +22,13 @@ export default async function TutorPage({
 
   // Fetch user progress separately (cached per user)
   const progressRows = await getTutorProgress(userId, tutor.id);
-  const progressMap = new Map(
-    progressRows.map((r) => [r.videoId, r])
-  );
+  const progressByPlaylist = new Map<string, { completed: number; inProgress: number }>();
+  for (const r of progressRows) {
+    const counts = progressByPlaylist.get(r.video.playlistId) ?? { completed: 0, inProgress: 0 };
+    if (r.isCompleted) counts.completed++;
+    else if (r.lastWatchedSeconds > 0) counts.inProgress++;
+    progressByPlaylist.set(r.video.playlistId, counts);
+  }
 
   return (
     <div className="relative min-h-[calc(100vh-57px)]">
@@ -58,16 +62,7 @@ export default async function TutorPage({
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {tutor.playlists.map((playlist) => {
-            let completedCount = 0;
-            let inProgressCount = 0;
-            for (const v of playlist.videos) {
-              const p = progressMap.get(v.id);
-              if (p?.isCompleted) {
-                completedCount++;
-              } else if (p && p.lastWatchedSeconds > 0) {
-                inProgressCount++;
-              }
-            }
+            const counts = progressByPlaylist.get(playlist.id);
 
             return (
               <PlaylistCard
@@ -76,9 +71,9 @@ export default async function TutorPage({
                 description={playlist.description}
                 slug={playlist.slug}
                 tutorSlug={tutor.slug}
-                totalVideos={playlist.videos.length}
-                completedVideos={completedCount}
-                inProgressVideos={inProgressCount}
+                totalVideos={playlist._count.videos}
+                completedVideos={counts?.completed ?? 0}
+                inProgressVideos={counts?.inProgress ?? 0}
               />
             );
           })}

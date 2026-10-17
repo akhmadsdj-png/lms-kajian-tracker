@@ -82,6 +82,8 @@ model Playlist {
   orderIndex   Int      @default(0)
   videos       Video[]
   createdAt    DateTime @default(now())
+
+  @@index([tutorId])
 }
 
 model Video {
@@ -96,6 +98,7 @@ model Video {
   createdAt       DateTime       @default(now())
 
   @@unique([playlistId, youtubeVideoId])
+  @@index([playlistId, orderIndex])
 }
 
 model UserProgress {
@@ -109,4 +112,5 @@ model UserProgress {
   updatedAt          DateTime @updatedAt
 
   @@unique([userId, videoId])
+  @@index([videoId])
 }

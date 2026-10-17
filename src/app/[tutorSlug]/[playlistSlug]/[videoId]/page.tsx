@@ -8,7 +8,7 @@ import { LoginBanner } from "@/components/LoginBanner";
 import Link from "next/link";
 import {
   getVideoPageData,
-  getVideoProgress,
+  getPlaylistProgress,
   getSidebarVideos,
 } from "@/lib/queries";
 import { connection } from "next/server";
@@ -34,28 +34,14 @@ export default async function VideoPage({
     notFound();
   }
 
-  const sidebarVideos = await getSidebarVideos(video.playlist.id);
+  // Sidebar list and the user's progress for the whole playlist, in parallel (one query each)
+  const [sidebarVideos, progressRows] = await Promise.all([
+    getSidebarVideos(video.playlist.id),
+    userId ? getPlaylistProgress(userId, video.playlist.id) : Promise.resolve([]),
+  ]);
 
-  // Fetch progress separately (cached per user)
-  let userProgress = null;
-  const sidebarProgressMap = new Map<string, { lastWatchedSeconds: number; isCompleted: boolean }>();
-
-  if (userId) {
-    const [currentProgress, allProgress] = await Promise.all([
-      getVideoProgress(userId, videoId),
-      getVideoProgress(userId, videoId).then(() =>
-        // Fetch all sidebar progress in parallel
-        Promise.all(
-          sidebarVideos.map((sv) => getVideoProgress(userId, sv.id))
-        )
-      ),
-    ]);
-    userProgress = currentProgress;
-    for (let i = 0; i < sidebarVideos.length; i++) {
-      const p = allProgress[i];
-      if (p) sidebarProgressMap.set(sidebarVideos[i].id, p);
-    }
-  }
+  const sidebarProgressMap = new Map(progressRows.map((r) => [r.videoId, r]));
+  const userProgress = sidebarProgressMap.get(videoId) ?? null;
 
   const startSeconds = userProgress?.lastWatchedSeconds ?? 0;
   const isCompleted = userProgress?.isCompleted ?? false;

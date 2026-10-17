@@ -12,10 +12,7 @@ export async function getDashboardTutors() {
       name: true,
       slug: true,
       playlists: {
-        select: {
-          id: true,
-          videos: { select: { id: true } },
-        },
+        select: { _count: { select: { videos: true } } },
       },
     },
   });
@@ -28,7 +25,11 @@ export async function getDashboardUserProgress(userId: string) {
 
   return prisma.userProgress.findMany({
     where: { userId },
-    select: { videoId: true, isCompleted: true, lastWatchedSeconds: true },
+    select: {
+      isCompleted: true,
+      lastWatchedSeconds: true,
+      video: { select: { playlist: { select: { tutorId: true } } } },
+    },
   });
 }
 
@@ -50,7 +51,7 @@ export async function getTutorPageData(tutorSlug: string) {
           slug: true,
           title: true,
           description: true,
-          videos: { select: { id: true } },
+          _count: { select: { videos: true } },
         },
         orderBy: { orderIndex: "asc" },
       },
@@ -65,7 +66,11 @@ export async function getTutorProgress(userId: string, tutorId: string) {
 
   return prisma.userProgress.findMany({
     where: { userId, video: { playlist: { tutorId } } },
-    select: { videoId: true, isCompleted: true, lastWatchedSeconds: true },
+    select: {
+      isCompleted: true,
+      lastWatchedSeconds: true,
+      video: { select: { playlistId: true } },
+    },
   });
 }
 
@@ -123,17 +128,6 @@ export async function getVideoPageData(videoId: string) {
         },
       },
     },
-  });
-}
-
-export async function getVideoProgress(userId: string, videoId: string) {
-  "use cache";
-  cacheLife({ stale: 30, revalidate: 60, expire: 600 });
-  cacheTag("progress", `progress-${userId}`);
-
-  return prisma.userProgress.findUnique({
-    where: { userId_videoId: { userId, videoId } },
-    select: { lastWatchedSeconds: true, isCompleted: true },
   });
 }
 
