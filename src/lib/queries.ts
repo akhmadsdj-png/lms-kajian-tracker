@@ -37,7 +37,8 @@ export async function getDashboardUserProgress(userId: string) {
     select: {
       isCompleted: true,
       lastWatchedSeconds: true,
-      video: { select: { playlistId: true, playlist: { select: { tutorId: true } } } },
+      updatedAt: true,
+      video: { select: { playlistId: true, durationSeconds: true } },
     },
   });
 }

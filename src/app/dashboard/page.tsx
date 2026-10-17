@@ -6,6 +6,7 @@ import { Backdrop } from "@/components/media/Backdrop";
 import { PlaylistTile } from "@/components/media/PlaylistTile";
 import { Shelf } from "@/components/media/Shelf";
 import { PlayIcon } from "@/components/media/PlayIcon";
+import { ProgressSummary, type ProgressStats } from "@/components/media/ProgressSummary";
 import { Thumb } from "@/components/media/Thumb";
 import { VideoTile } from "@/components/media/VideoTile";
 import {
@@ -30,10 +31,20 @@ export default async function DashboardPage() {
   ]);
 
   const completedByPlaylist = new Map<string, number>();
+  const lastActivityByPlaylist = new Map<string, number>();
+  let secondsWatched = 0;
+  let inProgress = 0;
   for (const r of progressRows) {
-    if (!r.isCompleted) continue;
     const id = r.video.playlistId;
-    completedByPlaylist.set(id, (completedByPlaylist.get(id) ?? 0) + 1);
+    const at = new Date(r.updatedAt).getTime();
+    lastActivityByPlaylist.set(id, Math.max(lastActivityByPlaylist.get(id) ?? 0, at));
+    if (r.isCompleted) {
+      completedByPlaylist.set(id, (completedByPlaylist.get(id) ?? 0) + 1);
+      secondsWatched += r.video.durationSeconds ?? r.lastWatchedSeconds;
+    } else {
+      secondsWatched += r.lastWatchedSeconds;
+      if (r.lastWatchedSeconds > 0) inProgress++;
+    }
   }
 
   const allPlaylists = tutors.flatMap((t) =>
@@ -46,10 +57,21 @@ export default async function DashboardPage() {
     shelves.set(name, [...(shelves.get(name) ?? []), p]);
   }
 
-  // Featured playlist rotates daily among the longer series
-  const featuredPool = allPlaylists.filter((p) => p._count.videos >= 20);
-  const day = Math.floor(Date.now() / 86_400_000);
-  const featured = featuredPool.length > 0 ? featuredPool[day % featuredPool.length] : allPlaylists[0];
+  const featured = pickDailyFeatured(allPlaylists);
+
+  const followed = allPlaylists
+    .filter((p) => lastActivityByPlaylist.has(p.id))
+    .sort((a, b) => lastActivityByPlaylist.get(b.id)! - lastActivityByPlaylist.get(a.id)!);
+
+  const stats: ProgressStats | null = userId
+    ? {
+        completed: [...completedByPlaylist.values()].reduce((n, c) => n + c, 0),
+        inProgress,
+        secondsWatched,
+        playlistsFollowed: followed.length,
+        followedTotal: followed.reduce((n, p) => n + p._count.videos, 0),
+      }
+    : null;
 
   const resume = resumeList[0];
 
@@ -119,6 +141,8 @@ export default async function DashboardPage() {
       )}
 
       <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
+        <ProgressSummary stats={stats} />
+
         {resumeList.length > 1 && (
           <Shelf title="Lanjutkan menonton">
             {resumeList.map((r) => (
@@ -130,6 +154,23 @@ export default async function DashboardPage() {
                 durationSeconds={r.video.durationSeconds}
                 watchedSeconds={r.lastWatchedSeconds}
                 meta={`Pertemuan ${r.video.orderIndex}, ${r.video.playlist.title}`}
+              />
+            ))}
+          </Shelf>
+        )}
+
+        {followed.length > 0 && (
+          <Shelf title="Playlist yang kamu ikuti">
+            {followed.map((p) => (
+              <PlaylistTile
+                key={p.id}
+                inShelf
+                href={`/${p.tutorSlug}/${p.slug}`}
+                title={p.title}
+                thumbnailUrl={p.thumbnailUrl}
+                totalVideos={p._count.videos}
+                completedVideos={completedByPlaylist.get(p.id) ?? 0}
+                subtitle="Baru dimulai"
               />
             ))}
           </Shelf>
@@ -172,3 +213,10 @@ export default async function DashboardPage() {
   );
 }
 
+// Featured playlist rotates daily among the longer series
+function pickDailyFeatured<T extends { _count: { videos: number } }>(playlists: T[]): T | undefined {
+  const pool = playlists.filter((p) => p._count.videos >= 20);
+  if (pool.length === 0) return playlists[0];
+  const day = Math.floor(Date.now() / 86_400_000);
+  return pool[day % pool.length];
+}
