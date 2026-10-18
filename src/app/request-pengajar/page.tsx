@@ -79,7 +79,7 @@ export default async function RequestTutorPage() {
         </div>
 
         {hasDonation && (
-          <aside className="h-fit rounded-2xl bg-gradient-to-b from-pen-soft to-surface p-5 sm:p-6 lg:sticky lg:top-20">
+          <aside id="donasi" className="h-fit scroll-mt-20 rounded-2xl bg-gradient-to-b from-pen-soft to-surface p-5 sm:p-6 lg:sticky lg:top-20">
             <h2 className="font-sans text-xl font-bold">Donasi seikhlasnya</h2>
             <p className="mt-2 text-pencil">
               Kajian Tracker gratis tanpa iklan. Donasi membantu biaya server dan sinkronisasi kajian setiap hari.

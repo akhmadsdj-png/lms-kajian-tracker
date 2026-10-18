@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { SearchBox } from "./SearchBox";
-import { CloseIcon, MenuIcon, SearchIcon } from "./icons";
+import { CloseIcon, HeartIcon, MenuIcon, SearchIcon } from "./icons";
 
 const COLLAPSED_KEY = "sidebar-collapsed";
 
@@ -79,6 +79,14 @@ export function AppShell({ sidebar, rail, children }: AppShellProps) {
             className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-raised md:hidden"
           >
             <SearchIcon />
+          </Link>
+          <Link
+            href="/request-pengajar#donasi"
+            aria-label="Donasi"
+            className="flex h-10 items-center gap-1.5 rounded-full px-2.5 text-sm font-semibold text-[#ff8fa3] hover:bg-raised sm:border sm:border-rule sm:px-3.5"
+          >
+            <HeartIcon className="h-5 w-5" />
+            <span className="hidden sm:inline">Donasi</span>
           </Link>
           {session?.user ? (
             <div className="flex items-center gap-3">

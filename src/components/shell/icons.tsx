@@ -53,6 +53,14 @@ export function LibraryIcon({ className }: IconProps) {
   );
 }
 
+export function HeartIcon({ className }: IconProps) {
+  return (
+    <svg {...base(className)} fill="currentColor" stroke="none">
+      <path d="M12 20.5s-7.5-4.6-9.3-9.6C1.5 7.5 3.7 4.5 7 4.5c2 0 3.6 1.1 5 2.9 1.4-1.8 3-2.9 5-2.9 3.3 0 5.5 3 4.3 6.4-1.8 5-9.3 9.6-9.3 9.6Z" />
+    </svg>
+  );
+}
+
 export function PlusIcon({ className }: IconProps) {
   return (
     <svg {...base(className)}>
