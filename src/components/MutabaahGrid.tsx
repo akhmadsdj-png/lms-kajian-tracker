@@ -71,11 +71,6 @@ export function MutabaahGrid({ videos, hrefBase, activeId, compact = false }: Mu
         <span className="flex items-center gap-1.5">
           <span className={`${legendTile} ${boxClass.unwatched}`} /> belum ditonton
         </span>
-        {activeId && (
-          <span className="flex items-center gap-1.5">
-            <span className={`${legendTile} bg-raised ring-2 ring-ink ring-inset`} /> sedang dibuka
-          </span>
-        )}
       </p>
     </div>
   );
