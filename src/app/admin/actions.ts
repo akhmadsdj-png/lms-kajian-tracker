@@ -80,3 +80,20 @@ export async function addTutorAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/dashboard");
 }
+
+export async function setRequestStatusAction(formData: FormData) {
+  const session = await auth();
+  if (!isAdmin(session?.user?.email)) {
+    throw new Error("Unauthorized");
+  }
+
+  const id = formData.get("id") as string | null;
+  const status = formData.get("status") as string | null;
+  if (!id || (status !== "added" && status !== "rejected" && status !== "pending")) {
+    throw new Error("Request tidak valid.");
+  }
+
+  await prisma.tutorRequest.update({ where: { id }, data: { status } });
+  revalidatePath("/admin");
+  revalidatePath("/request-pengajar");
+}

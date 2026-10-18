@@ -7,7 +7,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { Avatar } from "@/components/media/Avatar";
 import { NavLink } from "./NavLink";
 import { SignInButton } from "./SignInButton";
-import { CompassIcon, HomeIcon } from "./icons";
+import { CompassIcon, HomeIcon, PlusIcon } from "./icons";
 
 const row = {
   className: "flex items-center gap-4 rounded-lg px-3 py-2",
@@ -101,6 +101,19 @@ export async function Sidebar() {
             </NavLink>
           </li>
         ))}
+        <li>
+          <NavLink
+            href="/request-pengajar"
+            {...row}
+            icon={
+              <span className="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-pencil">
+                <PlusIcon className="h-4 w-4" />
+              </span>
+            }
+          >
+            <span className="text-pencil">Request pengajar</span>
+          </NavLink>
+        </li>
       </ul>
 
       <Divider />

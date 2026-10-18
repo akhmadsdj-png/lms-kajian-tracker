@@ -1,7 +1,7 @@
 import { getDashboardTutors } from "@/lib/queries";
 import { Avatar } from "@/components/media/Avatar";
 import { NavLink } from "./NavLink";
-import { CompassIcon, HomeIcon } from "./icons";
+import { CompassIcon, HomeIcon, PlusIcon } from "./icons";
 
 const item = {
   className: "flex flex-col items-center gap-1 rounded-lg px-1 py-3 text-[11px]",
@@ -35,6 +35,9 @@ export async function Rail() {
           </span>
         </NavLink>
       ))}
+      <NavLink href="/request-pengajar" {...item} icon={<PlusIcon />}>
+        Request
+      </NavLink>
     </nav>
   );
 }

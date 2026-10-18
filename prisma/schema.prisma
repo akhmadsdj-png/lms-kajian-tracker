@@ -19,6 +19,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   progress      UserProgress[]
+  tutorRequests TutorRequest[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -115,4 +116,19 @@ model UserProgress {
 
   @@unique([userId, videoId])
   @@index([videoId])
+}
+
+// A user's suggestion for a new ustadz; admins mark it added or rejected.
+model TutorRequest {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  channelUrl String?
+  note       String?
+  status     String   @default("pending") // pending | added | rejected
+  createdAt  DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@index([userId])
 }

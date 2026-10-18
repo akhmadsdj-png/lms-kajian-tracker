@@ -53,6 +53,14 @@ export function LibraryIcon({ className }: IconProps) {
   );
 }
 
+export function PlusIcon({ className }: IconProps) {
+  return (
+    <svg {...base(className)}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
 export function CloseIcon({ className }: IconProps) {
   return (
     <svg {...base(className)}>
