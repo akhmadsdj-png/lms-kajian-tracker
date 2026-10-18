@@ -2,7 +2,7 @@
  * Donation details. Defaults below are what the site shows today; any of them can be
  * overridden with environment variables without touching code:
  *
- *   DONATION_ACCOUNTS="BSI|7123456789|Nama Pemilik;BCA|1234567890|Nama Pemilik"
+ *   DONATION_ACCOUNTS="BSI|7123456789|Nama Pemilik;DANA|0851…"   (name optional)
  *   DONATION_QR_IMAGE="/donasi-dana.png"     image path or URL
  *   DONATION_QR_LABEL="Scan dengan aplikasi DANA"
  *   DONATION_QR_LINK="https://link.dana.id/…"   opens the same payment on a phone
@@ -11,6 +11,7 @@
  * Set a variable to an empty string to hide that part.
  */
 const DEFAULTS = {
+  accounts: "DANA|085156115262",
   qrImage: "/donasi-dana.png",
   qrLabel: "Scan dengan aplikasi DANA",
   // The DANA profile QR encodes this link (not a QRIS code), so it only works in DANA
@@ -21,7 +22,7 @@ const DEFAULTS = {
 export interface DonationAccount {
   bank: string;
   number: string;
-  holder: string;
+  holder: string | null;
 }
 
 function setting(name: string, fallback: string) {
@@ -30,11 +31,11 @@ function setting(name: string, fallback: string) {
 }
 
 export function getDonationInfo() {
-  const accounts: DonationAccount[] = (process.env.DONATION_ACCOUNTS ?? "")
+  const accounts: DonationAccount[] = (setting("DONATION_ACCOUNTS", DEFAULTS.accounts) ?? "")
     .split(";")
     .map((entry) => entry.split("|").map((part) => part.trim()))
-    .filter((parts) => parts.length === 3 && parts.every(Boolean))
-    .map(([bank, number, holder]) => ({ bank, number, holder }));
+    .filter(([bank, number]) => bank && number)
+    .map(([bank, number, holder]) => ({ bank, number, holder: holder || null }));
 
   const qrImage = setting("DONATION_QR_IMAGE", DEFAULTS.qrImage);
 

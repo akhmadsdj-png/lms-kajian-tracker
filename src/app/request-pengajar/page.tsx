@@ -94,7 +94,7 @@ export default async function RequestTutorPage() {
                       <p className="font-sans text-xl font-bold tabular-nums tracking-wide">{a.number}</p>
                       <CopyButton value={a.number} />
                     </div>
-                    <p className="mt-1 text-sm text-pencil">a.n. {a.holder}</p>
+                    {a.holder && <p className="mt-1 text-sm text-pencil">a.n. {a.holder}</p>}
                   </li>
                 ))}
               </ul>
