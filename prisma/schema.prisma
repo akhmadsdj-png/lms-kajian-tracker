@@ -118,9 +118,11 @@ model UserProgress {
   @@index([videoId])
 }
 
-// A user's suggestion for a new ustadz; admins mark it added or rejected.
+// A user's request: a new ustadz ("tutor") or a feature/suggestion ("feature").
+// Admins mark it added (done) or rejected.
 model TutorRequest {
   id         String   @id @default(cuid())
+  type       String   @default("tutor") // tutor | feature
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name       String

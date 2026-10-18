@@ -17,10 +17,11 @@ const statusLabel: Record<VideoStatus, string> = {
   unwatched: "belum ditonton",
 };
 
+// Solid tiles (like a contribution graph) read better at small sizes than outlines.
 export const boxClass: Record<VideoStatus, string> = {
-  completed: "border-pen bg-pen",
-  "in-progress": "border-pen bg-[linear-gradient(to_top,var(--color-pen)_50%,transparent_50%)]",
-  unwatched: "border-rule hover:border-pencil",
+  completed: "bg-pen",
+  "in-progress": "bg-pen/45",
+  unwatched: "bg-raised",
 };
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -31,11 +32,18 @@ function chunk<T>(items: T[], size: number): T[][] {
 
 // One box per pertemuan, grouped in tens like a santri's mutaba'ah card.
 export function MutabaahGrid({ videos, hrefBase, activeId, compact = false }: MutabaahGridProps) {
+  const tile = compact ? "h-4 w-4" : "h-5 w-5";
+  const legendTile = "h-3 w-3 rounded-[3px]";
+
   return (
     <div>
-      <div className={`flex flex-wrap ${compact ? "gap-x-2 gap-y-1" : "gap-x-3 gap-y-1.5"}`} aria-label="Kartu mutaba'ah" role="group">
+      <div
+        className={`flex flex-wrap gap-y-1 ${compact ? "gap-x-2.5" : "gap-x-3.5"}`}
+        aria-label="Kartu mutaba'ah"
+        role="group"
+      >
         {chunk(videos, 10).map((group) => (
-          <ol key={group[0].id} className={`flex ${compact ? "gap-0.5" : "gap-1"}`}>
+          <ol key={group[0].id} className="flex gap-1">
             {group.map((v) => (
               <li key={v.id}>
                 <Link
@@ -43,8 +51,8 @@ export function MutabaahGrid({ videos, hrefBase, activeId, compact = false }: Mu
                   title={`${v.orderIndex}. ${displayTitle(v.title)}`}
                   aria-label={`Pertemuan ${v.orderIndex}: ${displayTitle(v.title)}, ${statusLabel[v.status]}`}
                   aria-current={v.id === activeId ? "page" : undefined}
-                  className={`block rounded-[3px] border ${compact ? "h-3.5 w-3.5" : "h-5 w-5"} ${boxClass[v.status]} ${
-                    v.id === activeId ? "outline-2 outline-offset-2 outline-ink" : ""
+                  className={`block rounded-[4px] ${tile} ${boxClass[v.status]} hover:brightness-150 ${
+                    v.id === activeId ? "ring-2 ring-ink ring-inset" : ""
                   }`}
                 />
               </li>
@@ -53,17 +61,21 @@ export function MutabaahGrid({ videos, hrefBase, activeId, compact = false }: Mu
         ))}
       </div>
 
-      <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-pencil">
+      <p className={`mt-3 flex flex-wrap gap-x-4 gap-y-1 text-pencil ${compact ? "text-xs" : "text-sm"}`}>
         <span className="flex items-center gap-1.5">
-          <span className={`h-3 w-3 rounded-[2px] border ${boxClass.completed}`} /> selesai
+          <span className={`${legendTile} ${boxClass.completed}`} /> selesai
         </span>
         <span className="flex items-center gap-1.5">
-          <span className={`h-3 w-3 rounded-[2px] border ${boxClass["in-progress"]}`} />{" "}
-          belum tuntas
+          <span className={`${legendTile} ${boxClass["in-progress"]}`} /> belum tuntas
         </span>
         <span className="flex items-center gap-1.5">
-          <span className={`h-3 w-3 rounded-[2px] border ${boxClass.unwatched}`} /> belum ditonton
+          <span className={`${legendTile} ${boxClass.unwatched}`} /> belum ditonton
         </span>
+        {activeId && (
+          <span className="flex items-center gap-1.5">
+            <span className={`${legendTile} bg-raised ring-2 ring-ink ring-inset`} /> sedang dibuka
+          </span>
+        )}
       </p>
     </div>
   );

@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { AccountMenu } from "./AccountMenu";
 import { SearchBox } from "./SearchBox";
 import { CloseIcon, HeartIcon, MenuIcon, SearchIcon } from "./icons";
 
@@ -83,37 +83,17 @@ export function AppShell({ sidebar, rail, children }: AppShellProps) {
           <Link
             href="/request-pengajar#donasi"
             aria-label="Donasi"
-            className="flex h-10 items-center gap-1.5 rounded-full px-2.5 text-sm font-semibold text-[#ff8fa3] hover:bg-raised sm:border sm:border-rule sm:px-3.5"
+            className="flex h-9 items-center gap-1.5 rounded-full px-2 text-sm font-semibold hover:bg-raised sm:bg-raised sm:px-3.5 sm:hover:bg-rule"
           >
-            <HeartIcon className="h-5 w-5" />
+            <HeartIcon className="h-5 w-5 text-[#ff8fa3]" />
             <span className="hidden sm:inline">Donasi</span>
           </Link>
           {session?.user ? (
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="hidden text-sm font-semibold text-pencil hover:text-ink sm:block"
-              >
-                Keluar
-              </button>
-              {session.user.image ? (
-                <Image
-                  src={session.user.image}
-                  alt={session.user.name ?? "Akun"}
-                  width={32}
-                  height={32}
-                  className="rounded-full"
-                />
-              ) : (
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pen font-bold text-paper">
-                  {session.user.name?.[0] ?? "?"}
-                </span>
-              )}
-            </div>
+            <AccountMenu name={session.user.name} email={session.user.email} image={session.user.image} />
           ) : (
             <button
               onClick={() => signIn("google")}
-              className="rounded-full border border-rule px-4 py-1.5 text-sm font-semibold text-pen hover:bg-pen-soft"
+              className="h-9 rounded-full border border-rule px-4 text-sm font-semibold text-pen hover:bg-pen-soft"
             >
               Masuk
             </button>

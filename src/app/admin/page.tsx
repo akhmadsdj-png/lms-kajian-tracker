@@ -38,15 +38,16 @@ export default async function AdminPage() {
 
       <section className="mb-12">
         <h2 className="mb-2 text-xl">
-          Request masuk{pendingCount > 0 && <span className="ml-2 rounded-full bg-pen px-2 py-0.5 font-sans text-sm text-paper">{pendingCount} baru</span>}
+          Request dan saran masuk{pendingCount > 0 && <span className="ml-2 rounded-full bg-pen px-2 py-0.5 font-sans text-sm text-paper">{pendingCount} baru</span>}
         </h2>
         {requests.length === 0 ? (
-          <p className="border-t border-rule py-4 text-pencil">Belum ada request dari pengguna.</p>
+          <p className="border-t border-rule py-4 text-pencil">Belum ada request atau saran dari pengguna.</p>
         ) : (
           <ul className="border-t border-rule">
             {requests.map((r) => (
               <li key={r.id} className={`flex flex-col gap-3 border-b border-rule px-2 py-4 sm:flex-row sm:items-start sm:justify-between ${r.status === "pending" ? "" : "opacity-60"}`}>
                 <div className="min-w-0">
+                  <p className="text-xs font-semibold text-pen">{r.type === "feature" ? "Saran atau fitur" : "Pengajar"}</p>
                   <p className="font-semibold">{r.name}</p>
                   {r.channelUrl && (
                     <a href={r.channelUrl.startsWith("@") ? `https://www.youtube.com/${r.channelUrl}` : r.channelUrl} target="_blank" rel="noopener noreferrer" className="block truncate text-sm text-pen hover:underline">
@@ -66,7 +67,7 @@ export default async function AdminPage() {
                         <input type="hidden" name="id" value={r.id} />
                         <input type="hidden" name="status" value="added" />
                         <button className="rounded-full bg-pen px-3 py-1.5 text-sm font-semibold text-paper hover:opacity-90">
-                          Tandai ditambahkan
+                          {r.type === "feature" ? "Tandai selesai" : "Tandai ditambahkan"}
                         </button>
                       </form>
                       <form action={setRequestStatusAction}>
@@ -77,7 +78,7 @@ export default async function AdminPage() {
                     </>
                   ) : (
                     <>
-                      <span className="text-sm text-pencil">{r.status === "added" ? "Ditambahkan" : "Ditolak"}</span>
+                      <span className="text-sm text-pencil">{r.status === "added" ? (r.type === "feature" ? "Selesai" : "Ditambahkan") : "Ditolak"}</span>
                       <form action={setRequestStatusAction}>
                         <input type="hidden" name="id" value={r.id} />
                         <input type="hidden" name="status" value="pending" />
