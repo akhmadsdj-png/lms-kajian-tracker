@@ -4,7 +4,8 @@ import { displayTitle } from "@/lib/format";
 export type VideoStatus = "completed" | "in-progress" | "unwatched";
 
 interface MutabaahGridProps {
-  videos: { id: string; title: string; orderIndex: number; status: VideoStatus }[];
+  /** `href` overrides `${hrefBase}/${id}`, for user playlists that mix several source playlists */
+  videos: { id: string; title: string; orderIndex: number; status: VideoStatus; href?: string }[];
   hrefBase: string;
   activeId?: string;
   /** Smaller boxes for the video page sidebar */
@@ -47,7 +48,7 @@ export function MutabaahGrid({ videos, hrefBase, activeId, compact = false }: Mu
             {group.map((v) => (
               <li key={v.id}>
                 <Link
-                  href={`${hrefBase}/${v.id}`}
+                  href={v.href ?? `${hrefBase}/${v.id}`}
                   title={`${v.orderIndex}. ${displayTitle(v.title)}`}
                   aria-label={`Pertemuan ${v.orderIndex}: ${displayTitle(v.title)}, ${statusLabel[v.status]}`}
                   aria-current={v.id === activeId ? "page" : undefined}

@@ -1,9 +1,11 @@
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { displayTitle } from "@/lib/format";
 import { ScrollToActive } from "@/components/ScrollToActive";
 import { notFound } from "next/navigation";
 import { YouTubePlayer } from "@/components/YouTubePlayer";
 import { MarkCompleteButton } from "@/components/MarkCompleteButton";
+import { SaveButton } from "@/components/SaveButton";
 import { Avatar } from "@/components/media/Avatar";
 import { VideoRow } from "@/components/media/VideoRow";
 import { MutabaahGrid, type VideoStatus } from "@/components/MutabaahGrid";
@@ -45,6 +47,11 @@ export default async function VideoPage({
 
   const sidebarProgressMap = new Map(progressRows.map((r) => [r.videoId, r]));
   const userProgress = sidebarProgressMap.get(videoId) ?? null;
+
+  // Whether this pertemuan is already in one of the viewer's own playlists ("Tersimpan")
+  const savedInUserPlaylist = userId
+    ? (await prisma.userPlaylistItem.count({ where: { videoId, playlist: { userId } } })) > 0
+    : false;
 
   const startSeconds = userProgress?.lastWatchedSeconds ?? 0;
   const isCompleted = userProgress?.isCompleted ?? false;
@@ -99,7 +106,11 @@ export default async function VideoPage({
 
                 <div className="flex flex-wrap items-center gap-2">
                   {session?.user ? (
-                    <MarkCompleteButton videoId={video.id} initialCompleted={isCompleted} />
+                    <>
+                      <MarkCompleteButton videoId={video.id} initialCompleted={isCompleted} />
+                      {/* key: reset the menu state when moving to another pertemuan */}
+                      <SaveButton key={video.id} videoId={video.id} initialSaved={savedInUserPlaylist} />
+                    </>
                   ) : (
                     <Link
                       href="/api/auth/signin"

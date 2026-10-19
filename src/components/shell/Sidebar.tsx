@@ -1,13 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { getDashboardTutors, getDashboardUserProgress } from "@/lib/queries";
 import { followedPlaylists, summarizeProgress } from "@/lib/library";
 import { CATEGORIES } from "@/lib/categories";
 import { Avatar } from "@/components/media/Avatar";
 import { NavLink } from "./NavLink";
 import { SignInButton } from "./SignInButton";
-import { ChartIcon, CompassIcon, HomeIcon, PlusIcon } from "./icons";
+import { BookmarkIcon, ChartIcon, CompassIcon, HomeIcon, ListIcon, PlusIcon } from "./icons";
 
 const row = {
   className: "flex items-center gap-4 rounded-lg px-3 py-2",
@@ -19,9 +20,17 @@ export async function Sidebar() {
   const session = await auth();
   const userId = session?.user?.id;
 
-  const [tutors, progressRows] = await Promise.all([
+  const [tutors, progressRows, ownPlaylists] = await Promise.all([
     getDashboardTutors(),
     userId ? getDashboardUserProgress(userId) : Promise.resolve([]),
+    userId
+      ? prisma.userPlaylist.findMany({
+          where: { userId },
+          orderBy: [{ isWatchLater: "desc" }, { updatedAt: "desc" }],
+          take: 6,
+          select: { id: true, title: true, isWatchLater: true, _count: { select: { items: true } } },
+        })
+      : Promise.resolve([]),
   ]);
 
   const playlists = tutors.flatMap((t) => t.playlists.map((p) => ({ ...p, tutorSlug: t.slug })));
@@ -42,7 +51,11 @@ export async function Sidebar() {
 
       <Divider />
 
-      <h2 className="px-3 pb-2 font-sans text-base font-bold">Pustaka kamu</h2>
+      <h2 className="px-3 pb-2 font-sans text-base font-bold">
+        <Link href="/pustaka" className="hover:underline underline-offset-4">
+          Pustaka kamu
+        </Link>
+      </h2>
       {!userId ? (
         <div className="mx-1 rounded-xl bg-pen-soft p-4">
           <p className="font-semibold">Simpan progres kajianmu</p>
@@ -85,6 +98,28 @@ export async function Sidebar() {
               </li>
             );
           })}
+        </ul>
+      )}
+
+      {userId && (
+        <ul className="mt-1">
+          {ownPlaylists.map((p) => (
+            <li key={p.id}>
+              <NavLink
+                href={`/pustaka/${p.id}`}
+                {...row}
+                icon={p.isWatchLater ? <BookmarkIcon className="h-5 w-5" /> : <ListIcon className="h-5 w-5" />}
+              >
+                <span className="min-w-0 flex-1 truncate">{p.title}</span>
+                <span className="text-xs tabular-nums text-pencil">{p._count.items}</span>
+              </NavLink>
+            </li>
+          ))}
+          <li>
+            <NavLink href="/pustaka" {...row} icon={<PlusIcon className="h-5 w-5" />}>
+              <span className="text-pencil">{ownPlaylists.length > 0 ? "Semua playlist kamu" : "Buat playlist sendiri"}</span>
+            </NavLink>
+          </li>
         </ul>
       )}
 

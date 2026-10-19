@@ -14,6 +14,10 @@ interface VideoRowProps {
   isActive?: boolean;
   /** Smaller thumbnail for the watch-page sidebar */
   compact?: boolean;
+  /** Extra line under the title, e.g. the source playlist in a user playlist */
+  subtitle?: string;
+  /** Render as a div when the caller supplies its own <li> (to add controls beside the row) */
+  as?: "li" | "div";
 }
 
 // A track-list row: number, thumbnail with watched bar, title and status.
@@ -27,9 +31,11 @@ export function VideoRow({
   isCompleted = false,
   isActive = false,
   compact = false,
+  subtitle,
+  as: Wrapper = "li",
 }: VideoRowProps) {
   return (
-    <li>
+    <Wrapper className={Wrapper === "div" ? "min-w-0 flex-1" : undefined}>
       <Link
         href={href}
         aria-current={isActive ? "page" : undefined}
@@ -58,6 +64,7 @@ export function VideoRow({
           >
             {displayTitle(title)}
           </p>
+          {subtitle && <p className="mt-0.5 truncate text-sm text-pencil">{subtitle}</p>}
           {isCompleted ? (
             <p className="mt-1 flex items-center gap-1 text-sm text-pen">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" aria-hidden>
@@ -72,6 +79,6 @@ export function VideoRow({
           )}
         </div>
       </Link>
-    </li>
+    </Wrapper>
   );
 }

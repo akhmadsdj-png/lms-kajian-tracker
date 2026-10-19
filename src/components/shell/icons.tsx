@@ -107,6 +107,22 @@ export function ArrowLeftIcon({ className }: IconProps) {
   );
 }
 
+export function BookmarkIcon({ className, filled }: IconProps) {
+  return (
+    <svg {...base(className)} fill={filled ? "currentColor" : "none"}>
+      <path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1Z" />
+    </svg>
+  );
+}
+
+export function ListIcon({ className }: IconProps) {
+  return (
+    <svg {...base(className)}>
+      <path d="M8 6h12M8 12h12M8 18h8M4 6h.01M4 12h.01M4 18h.01" />
+    </svg>
+  );
+}
+
 export function PlusIcon({ className }: IconProps) {
   return (
     <svg {...base(className)}>

@@ -23,6 +23,7 @@ model User {
   progress      UserProgress[]
   tutorRequests TutorRequest[]
   dailyActivity UserDailyActivity[]
+  userPlaylists UserPlaylist[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -101,6 +102,7 @@ model Video {
   orderIndex      Int
   durationSeconds Int?
   progress        UserProgress[]
+  inUserPlaylists UserPlaylistItem[]
   createdAt       DateTime       @default(now())
 
   @@unique([playlistId, youtubeVideoId])
@@ -147,4 +149,33 @@ model UserDailyActivity {
   seconds Int      @default(0)
 
   @@id([userId, day])
+}
+
+// Playlists a user puts together from any tutor's pertemuan. Items only point at
+// existing videos, so progress is shared with the original playlists.
+model UserPlaylist {
+  id           String             @id @default(cuid())
+  userId       String
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  isWatchLater Boolean            @default(false) // the built-in "Tonton nanti", one per user
+  items        UserPlaylistItem[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+model UserPlaylistItem {
+  id         String       @id @default(cuid())
+  playlistId String
+  playlist   UserPlaylist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  videoId    String
+  video      Video        @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  position   Int
+  addedAt    DateTime     @default(now())
+
+  @@unique([playlistId, videoId])
+  @@index([playlistId, position])
 }
