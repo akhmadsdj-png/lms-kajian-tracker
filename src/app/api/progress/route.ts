@@ -58,7 +58,10 @@ export async function POST(request: NextRequest) {
       WHERE "userId" = ${session.user.id} AND "videoId" = ${videoId}
     ), saved AS (
     INSERT INTO "UserProgress" ("id", "userId", "videoId", "lastWatchedSeconds", "isCompleted", "updatedAt")
-    VALUES (gen_random_uuid(), ${session.user.id}, ${videoId}, ${position}, ${!!isCompleted}, NOW())
+    SELECT gen_random_uuid(), ${session.user.id}, ${videoId}, ${position}, ${!!isCompleted}, NOW()
+    WHERE NOT EXISTS (
+      SELECT 1 FROM "User" WHERE "id" = ${session.user.id} AND "blockedAt" IS NOT NULL
+    )
     ON CONFLICT ("userId", "videoId") DO UPDATE
     SET "lastWatchedSeconds" = ${position},
         "isCompleted" = CASE
@@ -70,6 +73,11 @@ export async function POST(request: NextRequest) {
     )
     SELECT saved."id", (SELECT "lastWatchedSeconds" FROM prev) AS previous FROM saved
   `;
+
+  // Blocked accounts: the INSERT above wrote nothing
+  if (rows.length === 0) {
+    return NextResponse.json({ saved: false, reason: "blocked" }, { status: 403 });
+  }
 
   // Count playback time for the activity graph: only small forward steps (the player
   // saves every 15 s), so seeking ahead, rewinding or "mark complete" don't count.

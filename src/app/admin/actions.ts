@@ -1,7 +1,6 @@
 "use server";
 
-import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { getAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { revalidateTag, revalidatePath } from "next/cache";
 
@@ -66,8 +65,7 @@ async function resolveChannel(input: string): Promise<ResolvedChannel> {
 }
 
 export async function addTutorAction(_prev: AddTutorState, formData: FormData): Promise<AddTutorState> {
-  const session = await auth();
-  if (!isAdmin(session?.user?.email)) {
+  if (!(await getAdmin())) {
     return { ok: false, message: "Hanya admin yang bisa menambah pengajar." };
   }
 
@@ -110,8 +108,7 @@ export async function addTutorAction(_prev: AddTutorState, formData: FormData): 
 }
 
 export async function setRequestStatusAction(formData: FormData) {
-  const session = await auth();
-  if (!isAdmin(session?.user?.email)) {
+  if (!(await getAdmin())) {
     throw new Error("Unauthorized");
   }
 

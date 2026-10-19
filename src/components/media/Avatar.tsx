@@ -15,6 +15,8 @@ export function Avatar({ src, name, size }: { src: string | null; name: string; 
       width={size}
       height={size}
       unoptimized
+      // Google profile photos often refuse hotlinked requests that carry a Referer
+      referrerPolicy="no-referrer"
       className="shrink-0 rounded-full bg-raised object-cover"
       style={{ width: size, height: size }}
     />

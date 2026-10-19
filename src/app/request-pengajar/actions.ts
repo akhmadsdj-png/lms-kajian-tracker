@@ -15,6 +15,9 @@ export async function requestTutorAction(_prev: RequestState, formData: FormData
   const userId = session?.user?.id;
   if (!userId) return fail("Masuk dulu untuk mengirim request.");
 
+  const account = await prisma.user.findUnique({ where: { id: userId }, select: { blockedAt: true } });
+  if (account?.blockedAt) return fail("Akunmu diblokir, jadi request tidak bisa dikirim.");
+
   const name = (formData.get("name") as string | null)?.trim() ?? "";
   const channelUrl = type === "tutor" ? (formData.get("channelUrl") as string | null)?.trim() || null : null;
   const note = (formData.get("note") as string | null)?.trim() || null;

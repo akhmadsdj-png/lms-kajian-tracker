@@ -9,6 +9,8 @@ import { SearchBox } from "./SearchBox";
 import { CloseIcon, HeartIcon, MenuIcon, SearchIcon } from "./icons";
 
 const COLLAPSED_KEY = "sidebar-collapsed";
+// Top-level routes that are app pages, not tutor slugs (/[tutor]/[playlist]/[video] is the watch page)
+const APP_ROUTES = new Set(["admin", "search", "dashboard", "progres", "request-pengajar", "diblokir"]);
 
 interface AppShellProps {
   /** Full sidebar (server-rendered) */
@@ -30,7 +32,7 @@ export function AppShell({ sidebar, rail, children }: AppShellProps) {
 
   // Watch pages and the landing page give the content full width; the sidebar becomes a drawer.
   const segments = pathname.split("/").filter(Boolean);
-  const drawerOnly = pathname === "/" || (segments.length === 3 && segments[0] !== "search");
+  const drawerOnly = pathname === "/" || (segments.length === 3 && !APP_ROUTES.has(segments[0]));
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -89,7 +91,12 @@ export function AppShell({ sidebar, rail, children }: AppShellProps) {
             <span className="hidden sm:inline">Donasi</span>
           </Link>
           {session?.user ? (
-            <AccountMenu name={session.user.name} email={session.user.email} image={session.user.image} />
+            <AccountMenu
+              name={session.user.name}
+              email={session.user.email}
+              image={session.user.image}
+              isAdmin={session.user.isAdmin}
+            />
           ) : (
             <button
               onClick={() => signIn("google")}

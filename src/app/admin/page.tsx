@@ -1,16 +1,14 @@
-import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { getAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { setRequestStatusAction } from "./actions";
 import { AddTutorForm } from "./AddTutorForm";
+import { AdminNav } from "./AdminNav";
 import { connection } from "next/server";
 
 export default async function AdminPage() {
   await connection();
-  const session = await auth();
-
-  if (!isAdmin(session?.user?.email)) {
+  if (!(await getAdmin())) {
     redirect("/dashboard");
   }
 
@@ -32,7 +30,8 @@ export default async function AdminPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-      <h1 className="mb-10 text-3xl">Kelola pengajar</h1>
+      <h1 className="mb-6 text-3xl">Kelola pengajar</h1>
+      <AdminNav active="/admin" />
 
       <section className="mb-12">
         <h2 className="mb-2 text-xl">

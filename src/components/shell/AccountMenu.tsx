@@ -9,11 +9,12 @@ interface AccountMenuProps {
   name?: string | null;
   email?: string | null;
   image?: string | null;
+  isAdmin?: boolean;
 }
 
 // Avatar button that opens a small account menu (YouTube-style), so "Keluar" is
 // reachable on every screen size without crowding the top bar.
-export function AccountMenu({ name, email, image }: AccountMenuProps) {
+export function AccountMenu({ name, email, image, isAdmin = false }: AccountMenuProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -32,7 +33,7 @@ export function AccountMenu({ name, email, image }: AccountMenuProps) {
   }, [open]);
 
   const avatar = image ? (
-    <Image src={image} alt="" width={32} height={32} className="rounded-full" />
+    <Image src={image} alt="" width={32} height={32} referrerPolicy="no-referrer" className="rounded-full" />
   ) : (
     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pen font-bold text-paper">
       {name?.[0] ?? "?"}
@@ -63,6 +64,11 @@ export function AccountMenu({ name, email, image }: AccountMenuProps) {
               {email && <p className="truncate text-sm text-pencil">{email}</p>}
             </div>
           </div>
+          {isAdmin && (
+            <Link href="/admin" role="menuitem" onClick={() => setOpen(false)} className="block px-4 py-2.5 hover:bg-raised">
+              Panel admin
+            </Link>
+          )}
           <Link
             href="/request-pengajar?jenis=saran"
             role="menuitem"
