@@ -6,6 +6,7 @@
  *
  * Cara menjalankan:
  *   npx tsx scripts/sync-channel.ts
+ *   npx tsx scripts/sync-channel.ts --force   # ambil ulang semua playlist
  */
 
 import { PrismaClient } from "@prisma/client";
@@ -20,6 +21,7 @@ const prisma = new PrismaClient();
 
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY!;
 const BASE_URL = "https://www.googleapis.com/youtube/v3";
+const FORCE = process.argv.includes("--force");
 
 // Slugify a string
 function slugify(text: string): string {
@@ -63,14 +65,15 @@ async function fetchPlaylists(channelId: string) {
   return playlists;
 }
 
-// Fetch all videos from a playlist
+// Fetch all videos from a playlist, oldest first. Many channels keep a playlist sorted
+// newest-first, which would put pertemuan 1 at the bottom; when the YouTube order mostly
+// runs backwards in publish date, it is reversed. Ascending and hand-curated orders are kept.
 async function fetchVideos(playlistId: string) {
-  const videos: { youtubeVideoId: string; title: string; orderIndex: number }[] = [];
+  const videos: { youtubeVideoId: string; title: string; publishedAt: number }[] = [];
   let pageToken = "";
-  let order = 1;
 
   do {
-    const url = `${BASE_URL}/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=50&pageToken=${pageToken}&key=${YOUTUBE_API_KEY}`;
+    const url = `${BASE_URL}/playlistItems?part=snippet,contentDetails&playlistId=${playlistId}&maxResults=50&pageToken=${pageToken}&key=${YOUTUBE_API_KEY}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
     const data = await res.json() as any;
 
@@ -85,7 +88,7 @@ async function fetchVideos(playlistId: string) {
         videos.push({
           youtubeVideoId: videoId,
           title: item.snippet.title,
-          orderIndex: order++,
+          publishedAt: Date.parse(item.contentDetails?.videoPublishedAt ?? ""),
         });
       }
     }
@@ -93,7 +96,15 @@ async function fetchVideos(playlistId: string) {
     pageToken = data.nextPageToken ?? "";
   } while (pageToken);
 
-  return videos;
+  let newer = 0;
+  let older = 0;
+  for (let i = 1; i < videos.length; i++) {
+    if (videos[i].publishedAt > videos[i - 1].publishedAt) newer++;
+    else if (videos[i].publishedAt < videos[i - 1].publishedAt) older++;
+  }
+  if (older > newer) videos.reverse();
+
+  return videos.map((v, i) => ({ youtubeVideoId: v.youtubeVideoId, title: v.title, orderIndex: i + 1 }));
 }
 
 async function main() {
@@ -161,7 +172,7 @@ async function main() {
       // Skip playlists whose YouTube video count matches what we stored after the last
       // full fetch. youtubeVideoCount is only written after fetching every video, so a
       // playlist that was never fully synced (count 0) is always fetched.
-      if (existing && existing.youtubeVideoCount === pl.itemCount) {
+      if (!FORCE && existing && existing.youtubeVideoCount === pl.itemCount) {
         process.stdout.write(`⏭️  Sudah sinkron (${pl.itemCount} video), dilewati.\n`);
         totalPlaylistsProcessed++;
         continue;
