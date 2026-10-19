@@ -47,20 +47,42 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const position = Number(lastWatchedSeconds);
+
   // Single query: upsert with completion lock built into SQL
-  // Once isCompleted=true, it can NEVER be set back to false
-  const rows = await prisma.$queryRaw<{ id: string }[]>`
+  // Once isCompleted=true, it can NEVER be set back to false.
+  // The CTE reads the previous position from the same snapshot, before the update.
+  const rows = await prisma.$queryRaw<{ id: string; previous: number | null }[]>`
+    WITH prev AS (
+      SELECT "lastWatchedSeconds" FROM "UserProgress"
+      WHERE "userId" = ${session.user.id} AND "videoId" = ${videoId}
+    ), saved AS (
     INSERT INTO "UserProgress" ("id", "userId", "videoId", "lastWatchedSeconds", "isCompleted", "updatedAt")
-    VALUES (gen_random_uuid(), ${session.user.id}, ${videoId}, ${Number(lastWatchedSeconds)}, ${!!isCompleted}, NOW())
+    VALUES (gen_random_uuid(), ${session.user.id}, ${videoId}, ${position}, ${!!isCompleted}, NOW())
     ON CONFLICT ("userId", "videoId") DO UPDATE
-    SET "lastWatchedSeconds" = ${Number(lastWatchedSeconds)},
+    SET "lastWatchedSeconds" = ${position},
         "isCompleted" = CASE
           WHEN "UserProgress"."isCompleted" = true THEN true
           ELSE ${!!isCompleted}
         END,
         "updatedAt" = NOW()
     RETURNING "id"
+    )
+    SELECT saved."id", (SELECT "lastWatchedSeconds" FROM prev) AS previous FROM saved
   `;
+
+  // Count playback time for the activity graph: only small forward steps (the player
+  // saves every 15 s), so seeking ahead, rewinding or "mark complete" don't count.
+  const previous = rows[0]?.previous ?? 0;
+  const watched = Math.round(position - previous);
+  if (watched > 0 && watched <= 60) {
+    await prisma.$executeRaw`
+      INSERT INTO "UserDailyActivity" ("userId", "day", "seconds")
+      VALUES (${session.user.id}, (NOW() AT TIME ZONE 'Asia/Jakarta')::date, ${watched})
+      ON CONFLICT ("userId", "day") DO UPDATE
+      SET "seconds" = "UserDailyActivity"."seconds" + EXCLUDED."seconds"
+    `;
+  }
 
   return NextResponse.json({ saved: true, id: rows[0]?.id });
 }

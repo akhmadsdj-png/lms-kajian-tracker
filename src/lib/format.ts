@@ -20,3 +20,13 @@ export function formatTotalDuration(seconds: number): string {
   const hours = Math.round(seconds / 3600);
   return hours >= 1 ? `${hours} jam` : `${Math.max(1, Math.round(seconds / 60))} menit`;
 }
+
+/** "hari ini", "kemarin", "3 hari yang lalu", "2 minggu yang lalu" */
+export function timeAgo(date: Date | string): string {
+  const days = Math.floor((Date.now() - new Date(date).getTime()) / 86_400_000);
+  const rtf = new Intl.RelativeTimeFormat("id", { numeric: "auto" });
+  if (days < 1) return "hari ini";
+  if (days < 7) return rtf.format(-days, "day");
+  if (days < 30) return rtf.format(-Math.floor(days / 7), "week");
+  return rtf.format(-Math.floor(days / 30), "month");
+}

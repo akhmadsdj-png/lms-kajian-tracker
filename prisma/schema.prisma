@@ -20,6 +20,7 @@ model User {
   sessions      Session[]
   progress      UserProgress[]
   tutorRequests TutorRequest[]
+  dailyActivity UserDailyActivity[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -133,4 +134,15 @@ model TutorRequest {
 
   @@index([status, createdAt])
   @@index([userId])
+}
+
+// Seconds of actual playback per user per day (Asia/Jakarta), for the progress page's
+// activity graph and streak. Filled by POST /api/progress from forward playback only.
+model UserDailyActivity {
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day     DateTime @db.Date
+  seconds Int      @default(0)
+
+  @@id([userId, day])
 }

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { LoginButton } from "@/components/LoginButton";
 
 export interface ProgressStats {
@@ -67,6 +68,10 @@ export function ProgressSummary({ stats }: { stats: ProgressStats | null }) {
           </div>
         ))}
       </dl>
+
+      <Link href="/progres" className="mt-5 inline-block text-sm font-semibold text-pen hover:underline underline-offset-4">
+        Lihat detail progres dan aktivitas harian
+      </Link>
     </section>
   );
 }

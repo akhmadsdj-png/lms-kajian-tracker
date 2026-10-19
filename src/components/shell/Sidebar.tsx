@@ -7,7 +7,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { Avatar } from "@/components/media/Avatar";
 import { NavLink } from "./NavLink";
 import { SignInButton } from "./SignInButton";
-import { CompassIcon, HomeIcon, PlusIcon } from "./icons";
+import { ChartIcon, CompassIcon, HomeIcon, PlusIcon } from "./icons";
 
 const row = {
   className: "flex items-center gap-4 rounded-lg px-3 py-2",
@@ -32,6 +32,9 @@ export async function Sidebar() {
     <nav className="px-3 pt-1 pb-8">
       <NavLink href="/dashboard" {...row} icon={<HomeIcon />} activeIcon={<HomeIcon filled />}>
         Beranda
+      </NavLink>
+      <NavLink href="/progres" {...row} icon={<ChartIcon />} activeIcon={<ChartIcon filled />}>
+        Progres
       </NavLink>
       <NavLink href="/search" {...row} icon={<CompassIcon />} activeIcon={<CompassIcon filled />}>
         Telusuri

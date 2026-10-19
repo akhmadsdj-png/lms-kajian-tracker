@@ -38,6 +38,7 @@ export async function getDashboardUserProgress(userId: string) {
       isCompleted: true,
       lastWatchedSeconds: true,
       updatedAt: true,
+      videoId: true,
       video: { select: { playlistId: true, durationSeconds: true } },
     },
   });
@@ -121,7 +122,7 @@ export async function getPlaylistProgress(userId: string, playlistId: string) {
 
   return prisma.userProgress.findMany({
     where: { userId, video: { playlistId } },
-    select: { videoId: true, isCompleted: true, lastWatchedSeconds: true },
+    select: { videoId: true, isCompleted: true, lastWatchedSeconds: true, updatedAt: true },
   });
 }
 
@@ -241,4 +242,30 @@ export async function searchCatalog(q: string) {
     }),
   ]);
   return { playlists, videos };
+}
+
+/** `sinceDay` is a YYYY-MM-DD string (Asia/Jakarta calendar day). */
+export async function getDailyActivity(userId: string, sinceDay: string) {
+  "use cache";
+  cacheLife({ stale: 30, revalidate: 60, expire: 600 });
+  cacheTag("progress", `progress-${userId}`);
+
+  return prisma.userDailyActivity.findMany({
+    where: { userId, day: { gte: new Date(`${sinceDay}T00:00:00Z`) } },
+    select: { day: true, seconds: true },
+    orderBy: { day: "asc" },
+  });
+}
+
+export async function getPlaylistVideoLists(playlistIds: string[]) {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("tutors");
+
+  if (playlistIds.length === 0) return [];
+  return prisma.video.findMany({
+    where: { playlistId: { in: playlistIds } },
+    select: { id: true, playlistId: true, title: true, orderIndex: true },
+    orderBy: { orderIndex: "asc" },
+  });
 }

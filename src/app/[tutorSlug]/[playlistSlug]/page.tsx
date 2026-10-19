@@ -12,6 +12,7 @@ import { VideoRow } from "@/components/media/VideoRow";
 import { getPlaylistPageData, getPlaylistProgress } from "@/lib/queries";
 import { formatTotalDuration } from "@/lib/format";
 import { upsizeThumb } from "@/lib/youtube";
+import { pickNextVideo } from "@/lib/library";
 import { connection } from "next/server";
 
 export default async function PlaylistPage({
@@ -42,7 +43,10 @@ export default async function PlaylistPage({
   });
   const completedCount = videos.filter((v) => v.status === "completed").length;
   const totalSeconds = videos.reduce((n, v) => n + (v.durationSeconds ?? 0), 0);
-  const nextVideo = videos.find((v) => v.status !== "completed");
+  const nextVideo = pickNextVideo(videos, (id) => {
+    const touched = progressMap.get(id)?.updatedAt;
+    return touched ? new Date(touched).getTime() : undefined;
+  });
   const hrefBase = `/${tutorSlug}/${playlistSlug}`;
   const cover = upsizeThumb(playlist.thumbnailUrl);
 
@@ -92,9 +96,11 @@ export default async function PlaylistPage({
                   <PlayIcon className="ml-0.5 h-6 w-6" />
                 </span>
                 <span className="font-bold">
-                  {nextVideo.status === "unwatched" && completedCount === 0
-                    ? "Mulai dari pertemuan 1"
-                    : `Lanjutkan pertemuan ${nextVideo.orderIndex}`}
+                  {nextVideo.status === "in-progress"
+                    ? `Lanjutkan pertemuan ${nextVideo.orderIndex}`
+                    : completedCount === 0
+                      ? `Mulai dari pertemuan ${nextVideo.orderIndex}`
+                      : `Mulai pertemuan ${nextVideo.orderIndex}`}
                 </span>
               </Link>
             )}

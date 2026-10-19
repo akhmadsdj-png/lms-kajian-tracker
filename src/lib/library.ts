@@ -38,3 +38,24 @@ export function followedPlaylists<T extends { id: string }>(
     .filter((p) => lastActivityByPlaylist.has(p.id))
     .sort((a, b) => lastActivityByPlaylist.get(b.id)! - lastActivityByPlaylist.get(a.id)!);
 }
+
+/**
+ * Which pertemuan to offer next in a playlist: the half-watched one you touched most
+ * recently, otherwise the first unfinished one after your furthest finished one,
+ * otherwise the first unfinished one.
+ */
+export function pickNextVideo<T extends { id: string; orderIndex: number; status: string }>(
+  videos: T[],
+  lastTouched: (videoId: string) => number | undefined,
+): T | undefined {
+  const inProgress = videos
+    .filter((v) => v.status === "in-progress")
+    .sort((a, b) => (lastTouched(b.id) ?? 0) - (lastTouched(a.id) ?? 0));
+  if (inProgress.length > 0) return inProgress[0];
+
+  const furthestDone = Math.max(-1, ...videos.filter((v) => v.status === "completed").map((v) => v.orderIndex));
+  return (
+    videos.find((v) => v.status !== "completed" && v.orderIndex > furthestDone) ??
+    videos.find((v) => v.status !== "completed")
+  );
+}

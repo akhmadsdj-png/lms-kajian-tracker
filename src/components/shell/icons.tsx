@@ -53,6 +53,16 @@ export function LibraryIcon({ className }: IconProps) {
   );
 }
 
+export function ChartIcon({ className, filled }: IconProps) {
+  return (
+    <svg {...base(className)}>
+      <rect x="4" y="12" width="4" height="8" rx="1" fill={filled ? "currentColor" : "none"} />
+      <rect x="10" y="7" width="4" height="13" rx="1" fill={filled ? "currentColor" : "none"} />
+      <rect x="16" y="3" width="4" height="17" rx="1" fill={filled ? "currentColor" : "none"} />
+    </svg>
+  );
+}
+
 export function HeartIcon({ className }: IconProps) {
   return (
     <svg {...base(className)} fill="currentColor" stroke="none">
