@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Amiri, Literata, Source_Sans_3 } from "next/font/google";
+import { Literata, Source_Sans_3 } from "next/font/google";
 import { SessionProvider } from "@/components/SessionProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import { Rail } from "@/components/shell/Rail";
@@ -17,13 +17,6 @@ const sourceSans = Source_Sans_3({
   subsets: ["latin"],
 });
 
-// Only used for the ك mark
-const amiri = Amiri({
-  variable: "--font-amiri",
-  subsets: ["arabic"],
-  weight: "700",
-});
-
 export const metadata: Metadata = {
   title: "Kajian Tracker",
   description:
@@ -36,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${literata.variable} ${sourceSans.variable} ${amiri.variable} h-full antialiased`}>
+    <html lang="id" className={`${literata.variable} ${sourceSans.variable} h-full antialiased`}>
       <body className="min-h-full">
         <Suspense>
           <SessionProvider>

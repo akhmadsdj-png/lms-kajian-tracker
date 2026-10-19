@@ -147,10 +147,9 @@ export function AppShell({ sidebar, rail, children }: AppShellProps) {
 
 function Logo() {
   return (
-    <Link href="/dashboard" className="flex items-baseline gap-2 px-1">
-      <span className="font-arabic text-2xl leading-none text-pen" aria-hidden>
-        ك
-      </span>
+    <Link href="/dashboard" className="flex items-center gap-2 px-1">
+      {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG */}
+      <img src="/logo.svg" alt="" width={24} height={24} className="h-7 w-7 shrink-0" />
       <span className="hidden font-serif text-lg font-semibold min-[400px]:inline">Kajian Tracker</span>
     </Link>
   );

@@ -17,7 +17,6 @@
 
   --font-serif: var(--font-literata), Georgia, serif;
   --font-sans: var(--font-source-sans), system-ui, sans-serif;
-  --font-arabic: var(--font-amiri), serif;
 }
 
 @layer base {
