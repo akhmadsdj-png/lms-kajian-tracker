@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useState } from "react";
 import { requestTutorAction, type RequestState, type RequestType } from "./actions";
 
 const inputClass =
@@ -16,6 +17,12 @@ export function RequestForm({ initialType = "tutor" }: { initialType?: RequestTy
   const [type, setType] = useState<RequestType>(initialType);
   const isTutor = type === "tutor";
   const result = state?.type === type ? state : null;
+  const router = useRouter();
+
+  // After a successful send, continue to the donation page with a thank-you note
+  useEffect(() => {
+    if (state?.ok) router.push(`/donasi?terkirim=${state.type === "feature" ? "saran" : "pengajar"}`);
+  }, [state, router]);
 
   return (
     <div>

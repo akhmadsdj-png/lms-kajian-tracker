@@ -14,7 +14,7 @@ export default function BlockedPage() {
         <Link href="/dashboard" className="rounded-full bg-ink px-5 py-2 font-bold text-paper hover:opacity-90">
           Lihat kajian tanpa masuk
         </Link>
-        <Link href="/request-pengajar#donasi" className="rounded-full bg-raised px-5 py-2 font-bold hover:bg-rule">
+        <Link href="/donasi" className="rounded-full bg-raised px-5 py-2 font-bold hover:bg-rule">
           Hubungi admin
         </Link>
       </div>

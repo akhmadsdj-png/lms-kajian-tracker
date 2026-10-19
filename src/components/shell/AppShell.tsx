@@ -90,7 +90,7 @@ export function AppShell({ sidebar, rail, adminSidebar, adminRail, children }: A
             <SearchIcon />
           </Link>
           <Link
-            href="/request-pengajar#donasi"
+            href="/donasi"
             aria-label="Donasi"
             className="flex h-9 items-center gap-1.5 rounded-full px-2 text-sm font-semibold hover:bg-raised sm:bg-raised sm:px-3.5 sm:hover:bg-rule"
           >
