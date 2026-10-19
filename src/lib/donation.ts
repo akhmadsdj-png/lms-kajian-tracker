@@ -11,7 +11,7 @@
  * Set a variable to an empty string to hide that part.
  */
 const DEFAULTS = {
-  accounts: "DANA|085156115262",
+  accounts: "",
   // Static QRIS for "Kajian Tracker, Service" (NMID ID1026618833077); any bank or e-wallet can pay it
   qrImage: "/donasi-qris.jpg",
   qrLabel: "Scan dari aplikasi bank atau e-wallet apa saja",
