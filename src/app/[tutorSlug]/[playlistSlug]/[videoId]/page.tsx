@@ -8,7 +8,8 @@ import { MarkCompleteButton } from "@/components/MarkCompleteButton";
 import { SaveButton } from "@/components/SaveButton";
 import { Avatar } from "@/components/media/Avatar";
 import { VideoRow } from "@/components/media/VideoRow";
-import { MutabaahGrid, type VideoStatus } from "@/components/MutabaahGrid";
+import type { VideoStatus } from "@/lib/progress-status";
+import { ProgressBar } from "@/components/progress/ProgressBar";
 import { LoginBanner } from "@/components/LoginBanner";
 import Link from "next/link";
 import {
@@ -148,13 +149,15 @@ export default async function VideoPage({
                   {video.playlist.title}
                 </Link>
                 <p className="mt-0.5 text-sm tabular-nums text-pencil">
-                  {video.playlist.tutor.name}, {video.orderIndex}/{sidebarVideos.length}
-                  {userId && `, ${completedCount} selesai`}
+                  {video.playlist.tutor.name}, pertemuan {video.orderIndex} dari {sidebarVideos.length}
                 </p>
                 {userId && (
-                  <div className="mt-3">
-                    <MutabaahGrid videos={gridVideos} hrefBase={hrefBase} activeId={video.id} compact />
-                  </div>
+                  <ProgressBar
+                    className="mt-3"
+                    completed={completedCount}
+                    inProgress={gridVideos.filter((v) => v.status === "in-progress").length}
+                    total={gridVideos.length}
+                  />
                 )}
               </div>
               <ScrollToActive className="max-h-[70vh] space-y-0.5 overflow-y-auto p-1.5">

@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { LoginBanner } from "@/components/LoginBanner";
-import { MutabaahGrid, type VideoStatus } from "@/components/MutabaahGrid";
+import type { VideoStatus } from "@/lib/progress-status";
+import { ProgressBar } from "@/components/progress/ProgressBar";
 import { Avatar } from "@/components/media/Avatar";
 import { Backdrop } from "@/components/media/Backdrop";
 import { PlayIcon } from "@/components/media/PlayIcon";
@@ -104,17 +105,15 @@ export default async function PlaylistPage({
                 </span>
               </Link>
             )}
-            {userId && (
-              <p className="tabular-nums text-pencil">
-                {completedCount} dari {videos.length} selesai
-              </p>
-            )}
           </div>
 
           {userId && (
-            <div className="mt-6">
-              <MutabaahGrid videos={videos} hrefBase={hrefBase} compact />
-            </div>
+            <ProgressBar
+              className="mt-6 max-w-xl"
+              completed={completedCount}
+              inProgress={videos.filter((v) => v.status === "in-progress").length}
+              total={videos.length}
+            />
           )}
         </div>
       </header>

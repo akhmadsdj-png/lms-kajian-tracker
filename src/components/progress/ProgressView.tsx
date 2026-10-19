@@ -8,7 +8,8 @@ import {
 import { followedPlaylists, pickNextVideo, summarizeProgress } from "@/lib/library";
 import { activityRange, buildWeeks, currentStreak, secondsThisWeek } from "@/lib/activity";
 import { timeAgo } from "@/lib/format";
-import { MutabaahGrid, type VideoStatus } from "@/components/MutabaahGrid";
+import type { VideoStatus } from "@/lib/progress-status";
+import { ProgressBar } from "@/components/progress/ProgressBar";
 import { ActivityGraph } from "@/components/progress/ActivityGraph";
 import { PlaylistTile } from "@/components/media/PlaylistTile";
 import { Thumb } from "@/components/media/Thumb";
@@ -129,7 +130,6 @@ export async function ProgressView({ userId, title = "Progres belajar", readOnly
                     return touched ? new Date(touched).getTime() : undefined;
                   });
                   const href = `/${p.tutorSlug}/${p.slug}`;
-                  const percent = p._count.videos > 0 ? Math.round((done / p._count.videos) * 100) : 0;
                   return (
                     <li key={p.id} className="rounded-2xl bg-surface p-4 sm:p-5">
                       <div className="flex flex-col gap-4 sm:flex-row">
@@ -143,12 +143,12 @@ export async function ProgressView({ userId, title = "Progres belajar", readOnly
                           <p className="text-sm text-pencil">
                             {p.tutorName}, terakhir ditonton {timeAgo(new Date(lastActivityByPlaylist.get(p.id)!))}
                           </p>
-                          <div className="mt-3 flex items-center gap-3 text-sm tabular-nums text-pencil">
-                            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-raised" aria-hidden>
-                              <span className="block h-full rounded-full bg-pen" style={{ width: `${percent}%` }} />
-                            </span>
-                            {done} dari {p._count.videos} selesai
-                          </div>
+                          <ProgressBar
+                            className="mt-3"
+                            completed={done}
+                            inProgress={videos.filter((v) => v.status === "in-progress").length}
+                            total={p._count.videos}
+                          />
                           {next && !readOnly && (
                             <Link
                               href={`${href}/${next.id}`}
@@ -161,11 +161,6 @@ export async function ProgressView({ userId, title = "Progres belajar", readOnly
                           )}
                         </div>
                       </div>
-                      {videos.length > 0 && (
-                        <div className="mt-4 border-t border-rule pt-4">
-                          <MutabaahGrid videos={videos} hrefBase={href} compact />
-                        </div>
-                      )}
                     </li>
                   );
                 })}

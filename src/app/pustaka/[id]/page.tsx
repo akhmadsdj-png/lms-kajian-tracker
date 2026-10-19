@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { displayTitle, formatTotalDuration } from "@/lib/format";
 import { pickNextVideo } from "@/lib/library";
 import { upsizeThumb, videoThumb } from "@/lib/youtube";
-import { MutabaahGrid, type VideoStatus } from "@/components/MutabaahGrid";
+import type { VideoStatus } from "@/lib/progress-status";
+import { ProgressBar } from "@/components/progress/ProgressBar";
 import { Backdrop } from "@/components/media/Backdrop";
 import { PlayIcon } from "@/components/media/PlayIcon";
 import { Thumb } from "@/components/media/Thumb";
@@ -100,7 +101,6 @@ export default async function UserPlaylistPage({ params }: { params: Promise<{ i
               <h1 className="mt-1 text-3xl leading-tight sm:text-4xl lg:text-5xl">{playlist.title}</h1>
               <p className="mt-3 tabular-nums text-pencil">
                 {videos.length} pertemuan{totalSeconds > 0 && `, ${formatTotalDuration(totalSeconds)}`}
-                {videos.length > 0 && `, ${done} selesai`}
               </p>
               {playlist.description && <p className="mt-3 max-w-2xl text-pencil">{playlist.description}</p>}
               {!playlist.isWatchLater && (
@@ -121,9 +121,12 @@ export default async function UserPlaylistPage({ params }: { params: Promise<{ i
           )}
 
           {videos.length > 0 && (
-            <div className="mt-6">
-              <MutabaahGrid videos={videos} hrefBase="" compact />
-            </div>
+            <ProgressBar
+              className="mt-6 max-w-xl"
+              completed={done}
+              inProgress={videos.filter((v) => v.status === "in-progress").length}
+              total={videos.length}
+            />
           )}
         </div>
       </header>
