@@ -1,62 +1,68 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { setCompleted } from "@/app/progress-actions";
 
 interface MarkCompleteButtonProps {
   videoId: string;
   initialCompleted: boolean;
 }
 
-export function MarkCompleteButton({
-  videoId,
-  initialCompleted,
-}: MarkCompleteButtonProps) {
-  const [isCompleted, setIsCompleted] = useState(initialCompleted);
-  const [isLoading, setIsLoading] = useState(false);
+/** Toggles "selesai" for this pertemuan; tapping again undoes it. */
+export function MarkCompleteButton({ videoId, initialCompleted }: MarkCompleteButtonProps) {
+  const router = useRouter();
+  const [completed, setCompletedState] = useState(initialCompleted);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
-  const handleMarkComplete = useCallback(async () => {
-    if (isCompleted || isLoading) return;
-
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/progress", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          videoId,
-          lastWatchedSeconds: 0,
-          isCompleted: true,
-        }),
-      });
-
-      if (res.ok) {
-        setIsCompleted(true);
+  function toggle() {
+    const next = !completed;
+    setCompletedState(next); // optimistic
+    setError(null);
+    startTransition(async () => {
+      try {
+        const result = await setCompleted(videoId, next);
+        if (!result.ok) {
+          setCompletedState(!next);
+          setError(result.message ?? "Gagal menyimpan.");
+          return;
+        }
+        router.refresh();
+      } catch {
+        setCompletedState(!next);
+        setError("Gagal terhubung ke server. Coba lagi.");
       }
-    } catch (error) {
-      console.error("Failed to mark complete:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [videoId, isCompleted, isLoading]);
-
-  if (isCompleted) {
-    return (
-      <p className="flex items-center gap-2 rounded-full bg-pen-soft px-4 py-2 font-semibold text-pen" role="status">
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" aria-hidden>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-        </svg>
-        Sudah selesai
-      </p>
-    );
+    });
   }
 
   return (
-    <button
-      onClick={handleMarkComplete}
-      disabled={isLoading}
-      className="rounded-full bg-pen px-4 py-2 font-semibold text-paper hover:opacity-90 disabled:opacity-60"
-    >
-      {isLoading ? "Menyimpan…" : "Tandai selesai"}
-    </button>
+    <div className="flex flex-col">
+      <button
+        type="button"
+        onClick={toggle}
+        disabled={pending}
+        aria-pressed={completed}
+        title={completed ? "Tekan untuk menandai belum selesai" : undefined}
+        className={`group flex items-center gap-2 rounded-full px-4 py-2 font-semibold disabled:opacity-70 ${
+          completed ? "bg-pen-soft text-pen hover:bg-raised" : "bg-pen text-paper hover:opacity-90"
+        }`}
+      >
+        {completed && (
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+          </svg>
+        )}
+        {completed ? "Sudah selesai" : "Tandai selesai"}
+      </button>
+      {completed && !error && (
+        <span className="mt-1 px-2 text-xs text-pencil">Tekan lagi untuk membatalkan</span>
+      )}
+      {error && (
+        <span role="alert" className="mt-1 px-2 text-xs text-red-200">
+          {error}
+        </span>
+      )}
+    </div>
   );
 }
