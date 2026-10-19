@@ -119,6 +119,6 @@ export async function setRequestStatusAction(formData: FormData) {
   }
 
   await prisma.tutorRequest.update({ where: { id }, data: { status } });
-  revalidatePath("/admin");
+  revalidatePath("/admin/request");
   revalidatePath("/request-pengajar");
 }

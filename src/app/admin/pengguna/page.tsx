@@ -5,7 +5,6 @@ import { getAdmin, isSuperAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { timeAgo } from "@/lib/format";
 import { Avatar } from "@/components/media/Avatar";
-import { AdminNav } from "../AdminNav";
 import { UserActions } from "./UserActions";
 
 interface UserRow {
@@ -58,8 +57,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-      <h1 className="mb-6 text-3xl">Kelola pengguna</h1>
-      <AdminNav active="/admin/pengguna" />
+      <h1 className="mb-8 text-3xl">Kelola pengguna</h1>
 
       <form action="/admin/pengguna" className="mb-6 flex max-w-md gap-2" role="search">
         <input

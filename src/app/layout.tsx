@@ -3,6 +3,7 @@ import { Literata, Source_Sans_3 } from "next/font/google";
 import { SessionProvider } from "@/components/SessionProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import { Rail } from "@/components/shell/Rail";
+import { AdminRail, AdminSidebar } from "@/components/shell/AdminSidebar";
 import { Sidebar, SidebarSkeleton } from "@/components/shell/Sidebar";
 import { Suspense } from "react";
 import "./globals.css";
@@ -44,6 +45,8 @@ export default function RootLayout({
                   <Rail />
                 </Suspense>
               }
+              adminSidebar={<AdminSidebar />}
+              adminRail={<AdminRail />}
             >
               {children}
             </AppShell>

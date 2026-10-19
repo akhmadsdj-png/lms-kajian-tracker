@@ -17,6 +17,9 @@ interface AppShellProps {
   sidebar: React.ReactNode;
   /** Icon-only rail shown when the sidebar is collapsed on desktop */
   rail: React.ReactNode;
+  /** Sidebar and rail used on /admin pages instead of the reader's */
+  adminSidebar: React.ReactNode;
+  adminRail: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -24,7 +27,7 @@ interface AppShellProps {
  * YouTube-style frame: top bar with search, a left sidebar that collapses to an
  * icon rail on desktop, and a slide-in drawer on mobile and on watch pages.
  */
-export function AppShell({ sidebar, rail, children }: AppShellProps) {
+export function AppShell({ sidebar, rail, adminSidebar, adminRail, children }: AppShellProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
@@ -32,6 +35,9 @@ export function AppShell({ sidebar, rail, children }: AppShellProps) {
 
   // Watch pages and the landing page give the content full width; the sidebar becomes a drawer.
   const segments = pathname.split("/").filter(Boolean);
+  const inAdmin = segments[0] === "admin";
+  const navSidebar = inAdmin ? adminSidebar : sidebar;
+  const navRail = inAdmin ? adminRail : rail;
   const drawerOnly = pathname === "/" || (segments.length === 3 && !APP_ROUTES.has(segments[0]));
 
   useEffect(() => {
@@ -67,7 +73,7 @@ export function AppShell({ sidebar, rail, children }: AppShellProps) {
           >
             <MenuIcon />
           </button>
-          <Logo />
+          <Logo admin={inAdmin} />
         </div>
 
         <div className="mx-auto hidden w-full max-w-xl md:block">
@@ -116,7 +122,7 @@ export function AppShell({ sidebar, rail, children }: AppShellProps) {
             }`}
             aria-label="Navigasi utama"
           >
-            {collapsed ? rail : sidebar}
+            {collapsed ? navRail : navSidebar}
           </aside>
         )}
 
@@ -142,9 +148,9 @@ export function AppShell({ sidebar, rail, children }: AppShellProps) {
               >
                 <CloseIcon />
               </button>
-              <Logo />
+              <Logo admin={inAdmin} />
             </div>
-            {sidebar}
+            {navSidebar}
           </div>
         </div>
       )}
@@ -152,12 +158,13 @@ export function AppShell({ sidebar, rail, children }: AppShellProps) {
   );
 }
 
-function Logo() {
+function Logo({ admin = false }: { admin?: boolean }) {
   return (
-    <Link href="/dashboard" className="flex items-center gap-2 px-1">
+    <Link href={admin ? "/admin/request" : "/dashboard"} className="flex items-center gap-2 px-1">
       {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG */}
       <img src="/logo.svg" alt="" width={24} height={24} className="h-7 w-7 shrink-0" />
       <span className="hidden font-serif text-lg font-semibold min-[400px]:inline">Kajian Tracker</span>
+      {admin && <span className="rounded-md bg-pen px-1.5 py-0.5 text-xs font-bold text-paper">Admin</span>}
     </Link>
   );
 }
