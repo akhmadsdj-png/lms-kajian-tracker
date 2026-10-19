@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "Akun diblokir — Kajian Tracker" };
+export const metadata = { title: "Akun diblokir" };
 
 export default function BlockedPage() {
   return (

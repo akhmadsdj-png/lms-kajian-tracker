@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { getDonationInfo, whatsappLink } from "@/lib/donation";
 import { CopyButton } from "./CopyButton";
 
-export const metadata = { title: "Donasi — Kajian Tracker" };
+export const metadata = { title: "Donasi" };
 
 const THANKS: Record<string, string> = {
   pengajar: "Request pengajarmu terkirim. Admin akan mengecek channel-nya.",

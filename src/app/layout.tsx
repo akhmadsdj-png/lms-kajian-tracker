@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Literata, Source_Sans_3 } from "next/font/google";
 import { SessionProvider } from "@/components/SessionProvider";
 import { AppShell } from "@/components/shell/AppShell";
@@ -19,9 +20,11 @@ const sourceSans = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "Kajian Tracker",
+  // Absolute base for share-preview image URLs
+  metadataBase: new URL(process.env.AUTH_URL ?? "https://www.kajiantracker.com"),
+  title: { default: "Kajian Tracker", template: "%s — Kajian Tracker" },
   description:
-    "Platform LMS pribadi untuk melacak progres belajar dari playlist kajian YouTube Ustadz Firanda Andirja dan ulama lainnya.",
+    "Ikuti kajian YouTube para ustadz sampai tuntas. Progres tiap pertemuan tercatat, dan kamu bisa lanjut dari menit terakhir. Gratis, tanpa iklan.",
 };
 
 export default function RootLayout({
@@ -52,6 +55,7 @@ export default function RootLayout({
             </AppShell>
           </SessionProvider>
         </Suspense>
+        <Analytics />
       </body>
     </html>
   );

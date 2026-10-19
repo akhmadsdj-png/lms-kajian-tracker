@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -15,6 +16,19 @@ import { formatTotalDuration } from "@/lib/format";
 import { upsizeThumb } from "@/lib/youtube";
 import { pickNextVideo } from "@/lib/library";
 import { connection } from "next/server";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ playlistSlug: string }>;
+}): Promise<Metadata> {
+  const playlist = await getPlaylistPageData((await params).playlistSlug);
+  if (!playlist) return {};
+  return {
+    title: `${playlist.title} — ${playlist.tutor.name}`,
+    description: `${playlist.videos.length} pertemuan bersama ${playlist.tutor.name}. Ikuti sampai tuntas dan catat progresmu tiap pertemuan.`,
+  };
+}
 
 export default async function PlaylistPage({
   params,

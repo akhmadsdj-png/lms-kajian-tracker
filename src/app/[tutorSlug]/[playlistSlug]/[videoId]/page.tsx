@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { displayTitle } from "@/lib/format";
@@ -18,6 +19,15 @@ import {
   getSidebarVideos,
 } from "@/lib/queries";
 import { connection } from "next/server";
+
+export async function generateMetadata({ params }: { params: Promise<{ videoId: string }> }): Promise<Metadata> {
+  const video = await getVideoPageData((await params).videoId);
+  if (!video) return {};
+  return {
+    title: `${displayTitle(video.title)} — ${video.playlist.tutor.name}`,
+    description: `Pertemuan ${video.orderIndex} dari playlist ${video.playlist.title}.`,
+  };
+}
 
 export default async function VideoPage({
   params,

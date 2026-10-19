@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -7,6 +8,15 @@ import { Backdrop } from "@/components/media/Backdrop";
 import { PlaylistTile } from "@/components/media/PlaylistTile";
 import { getTutorPageData, getTutorProgress } from "@/lib/queries";
 import { connection } from "next/server";
+
+export async function generateMetadata({ params }: { params: Promise<{ tutorSlug: string }> }): Promise<Metadata> {
+  const tutor = await getTutorPageData((await params).tutorSlug);
+  if (!tutor) return {};
+  return {
+    title: tutor.name,
+    description: `Kajian ${tutor.name}: ${tutor.playlists.length} playlist. Ikuti sampai tuntas dan catat progresmu tiap pertemuan.`,
+  };
+}
 
 export default async function TutorPage({
   params,

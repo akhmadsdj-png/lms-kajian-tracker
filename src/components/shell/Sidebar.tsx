@@ -170,6 +170,17 @@ export async function Sidebar() {
           </li>
         ))}
       </ul>
+
+      <Divider />
+
+      <p className="flex flex-wrap gap-x-4 gap-y-1 px-3 pb-4 text-sm text-pencil">
+        <Link href="/privasi" className="hover:text-ink">
+          Kebijakan privasi
+        </Link>
+        <Link href="/donasi" className="hover:text-ink">
+          Donasi
+        </Link>
+      </p>
     </nav>
   );
 }
