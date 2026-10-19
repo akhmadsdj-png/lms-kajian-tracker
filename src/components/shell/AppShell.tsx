@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { AccountMenu } from "./AccountMenu";
 import { SearchBox } from "./SearchBox";
 import { CloseIcon, HeartIcon, MenuIcon, SearchIcon } from "./icons";
@@ -154,6 +155,7 @@ export function AppShell({ sidebar, rail, adminSidebar, adminRail, children }: A
           </div>
         </div>
       )}
+      <InstallPrompt />
     </>
   );
 }

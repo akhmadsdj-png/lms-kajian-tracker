@@ -6,6 +6,8 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Kajian Tracker",
     short_name: "Kajian",
     description: "Ikuti kajian YouTube pertemuan demi pertemuan dan simpan progres belajarmu.",
+    id: "/",
+    scope: "/",
     start_url: "/dashboard",
     display: "standalone",
     background_color: "#0e1116",
