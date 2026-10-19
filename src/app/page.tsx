@@ -15,12 +15,17 @@ export default async function HomePage() {
   }
 
   const tutors = await getDashboardTutors();
-  const covers = tutors
-    .flatMap((t) => t.playlists)
-    .map((p) => upsizeThumb(p.thumbnailUrl))
-    .filter((url): url is string => Boolean(url))
-    .slice(0, 24);
+  // Take covers round-robin across tutors so the wall shows every pengajar,
+  // not just the first one's 24 playlists
+  const perTutor = tutors.map((t) =>
+    t.playlists.map((p) => upsizeThumb(p.thumbnailUrl)).filter((url): url is string => Boolean(url)),
+  );
+  const covers: string[] = [];
+  for (let i = 0; covers.length < 24 && perTutor.some((list) => i < list.length); i++) {
+    for (const list of perTutor) if (i < list.length && covers.length < 24) covers.push(list[i]);
+  }
   const playlistCount = tutors.reduce((n, t) => n + t.playlists.length, 0);
+  const tutorCount = tutors.filter((t) => t.playlists.length > 0).length;
 
   return (
     <div className="relative isolate flex min-h-[calc(100svh-3.5rem)] items-end overflow-hidden">
@@ -41,7 +46,7 @@ export default async function HomePage() {
             Ikuti kajian YouTube pertemuan demi pertemuan.
           </h1>
           <p className="mt-5 max-w-xl text-lg text-pencil">
-            {playlistCount} playlist kajian, tersusun berurutan. Posisi tonton tersimpan, dan setiap
+            {playlistCount.toLocaleString("id-ID")} playlist kajian dari {tutorCount} pengajar, tersusun berurutan. Posisi tonton tersimpan, dan setiap
             pertemuan yang selesai tercentang.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
