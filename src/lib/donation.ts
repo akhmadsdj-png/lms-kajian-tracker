@@ -3,19 +3,19 @@
  * overridden with environment variables without touching code:
  *
  *   DONATION_ACCOUNTS="BSI|7123456789|Nama Pemilik;DANA|0851…"   (name optional)
- *   DONATION_QR_IMAGE="/donasi-dana.png"     image path or URL
- *   DONATION_QR_LABEL="Scan dengan aplikasi DANA"
- *   DONATION_QR_LINK="https://link.dana.id/…"   opens the same payment on a phone
+ *   DONATION_QR_IMAGE="/donasi-qris.jpg"     image path or URL
+ *   DONATION_QR_LABEL="Scan dari aplikasi bank atau e-wallet apa saja"
+ *   DONATION_QR_LINK="https://…"              optional deep link that opens the payment
  *   DONATION_WHATSAPP="6281234567890"         country code, no + or spaces
  *
  * Set a variable to an empty string to hide that part.
  */
 const DEFAULTS = {
   accounts: "DANA|085156115262",
-  qrImage: "/donasi-dana.png",
-  qrLabel: "Scan dengan aplikasi DANA",
-  // The DANA profile QR encodes this link (not a QRIS code), so it only works in DANA
-  qrLink: "https://link.dana.id/minta?full_url=https://qr.dana.id/v1/281012012024080565195414",
+  // Static QRIS for "Kajian Tracker, Service" (NMID ID1026618833077); any bank or e-wallet can pay it
+  qrImage: "/donasi-qris.jpg",
+  qrLabel: "Scan dari aplikasi bank atau e-wallet apa saja",
+  qrLink: "",
   whatsapp: "6285156115262",
 };
 

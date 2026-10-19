@@ -117,22 +117,35 @@ export default async function RequestTutorPage({
             {donation.qr && (
               <div className="mt-5 rounded-xl bg-paper/60 p-4 text-center">
                 {donation.qr.label && <p className="mb-3 text-sm font-semibold text-pencil">{donation.qr.label}</p>}
-                {/* eslint-disable-next-line @next/next/no-img-element -- QR may be hosted anywhere */}
-                <img
-                  src={donation.qr.image}
-                  alt="Kode QR donasi Kajian Tracker"
-                  className="mx-auto aspect-square w-full max-w-60 rounded-lg bg-white object-contain p-2"
-                />
-                {donation.qr.link && (
+                <a href={donation.qr.image} target="_blank" rel="noopener noreferrer" title="Buka ukuran penuh">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- QR may be hosted anywhere */}
+                  <img
+                    src={donation.qr.image}
+                    alt="Kode QRIS donasi Kajian Tracker"
+                    className="mx-auto w-full max-w-72 rounded-lg bg-white"
+                  />
+                </a>
+                <p className="mt-2 hidden text-xs text-pencil lg:block">Klik gambar untuk memperbesar.</p>
+                {/* On a phone the QR can't be scanned from its own screen: save it, then scan from gallery */}
+                <div className="mt-3 flex flex-wrap justify-center gap-2 lg:hidden">
                   <a
-                    href={donation.qr.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 inline-block rounded-full bg-raised px-4 py-1.5 text-sm font-semibold hover:bg-rule lg:hidden"
+                    href={donation.qr.image}
+                    download="QRIS-Kajian-Tracker"
+                    className="rounded-full bg-raised px-4 py-1.5 text-sm font-semibold hover:bg-rule"
                   >
-                    Buka di DANA
+                    Simpan gambar QRIS
                   </a>
-                )}
+                  {donation.qr.link && (
+                    <a
+                      href={donation.qr.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-full bg-raised px-4 py-1.5 text-sm font-semibold hover:bg-rule"
+                    >
+                      Buka aplikasi pembayaran
+                    </a>
+                  )}
+                </div>
               </div>
             )}
 

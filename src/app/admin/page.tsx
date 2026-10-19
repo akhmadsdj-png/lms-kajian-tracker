@@ -2,7 +2,8 @@ import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { addTutorAction, setRequestStatusAction } from "./actions";
+import { setRequestStatusAction } from "./actions";
+import { AddTutorForm } from "./AddTutorForm";
 import { connection } from "next/server";
 
 export default async function AdminPage() {
@@ -28,9 +29,6 @@ export default async function AdminPage() {
     include: { user: { select: { name: true, email: true } } },
   });
   const pendingCount = requests.filter((r) => r.status === "pending").length;
-
-  const inputClass =
-    "w-full rounded-md border border-rule bg-paper px-3 py-2 placeholder:text-pencil/70 focus:border-pen focus:outline-none";
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
@@ -96,45 +94,7 @@ export default async function AdminPage() {
       <div className="grid gap-12 md:grid-cols-[18rem_1fr]">
         <section>
           <h2 className="mb-4 text-xl">Tambah pengajar</h2>
-          <form action={addTutorAction} className="space-y-5">
-            <div>
-              <label htmlFor="name" className="mb-1 block font-semibold">
-                Nama
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                required
-                placeholder="Ustadz Syafiq Riza Basalamah"
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="youtubeChannelId" className="mb-1 block font-semibold">
-                Channel YouTube
-              </label>
-              <input
-                type="text"
-                id="youtubeChannelId"
-                name="youtubeChannelId"
-                required
-                placeholder="@amminurbaits"
-                className={inputClass}
-              />
-              <p className="mt-1.5 text-sm text-pencil">
-                Tempel URL channel, @handle, atau ID yang diawali UC.
-              </p>
-            </div>
-
-            <button
-              type="submit"
-              className="rounded-md bg-pen px-4 py-2 font-semibold text-paper hover:opacity-90"
-            >
-              Tambah pengajar
-            </button>
-          </form>
+          <AddTutorForm />
         </section>
 
         <section>
