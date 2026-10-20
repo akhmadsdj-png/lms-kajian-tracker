@@ -35,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="id" className={`${literata.variable} ${sourceSans.variable} h-full antialiased`}>
       <body className="min-h-full">
-        <Suspense>
+        <Suspense fallback={null}>
           <SessionProvider>
             <AppShell
               sidebar={
