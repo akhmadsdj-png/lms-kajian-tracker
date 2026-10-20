@@ -9,7 +9,7 @@
  *   npx tsx scripts/sync-channel.ts --force   # ambil ulang semua playlist
  */
 
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import * as dotenv from "dotenv";
 import * as path from "path";
 
@@ -104,7 +104,14 @@ async function fetchVideos(playlistId: string) {
   }
   if (older > newer) videos.reverse();
 
-  return videos.map((v, i) => ({ youtubeVideoId: v.youtubeVideoId, title: v.title, orderIndex: i + 1 }));
+  // A video can sit in a playlist twice; keep its first appearance.
+  const seen = new Set<string>();
+  return videos.filter((v) => !seen.has(v.youtubeVideoId) && seen.add(v.youtubeVideoId)).map((v, i) => ({ youtubeVideoId: v.youtubeVideoId, title: v.title, orderIndex: i + 1 }));
+}
+
+function isConnectionError(e: unknown): boolean {
+  const err = e as { code?: string; message?: string };
+  return err?.code === "P1001" || err?.code === "P1017" || /can't reach database|connection|ECONNRESET|terminat|timeout|aborted/i.test(err?.message ?? "");
 }
 
 async function main() {
@@ -150,106 +157,111 @@ async function main() {
     const claimedSlugs = new Set<string>();
 
     // Proses setiap playlist
+    let attempt = 0;
     for (let i = 0; i < playlists.length; i++) {
-      const pl = playlists[i];
-      process.stdout.write(`[${i + 1}/${playlists.length}] "${pl.title}" — `);
+      try {
+        const pl = playlists[i];
+        process.stdout.write(`[${i + 1}/${playlists.length}] "${pl.title}" — `);
 
-      const baseSlug = baseSlugs[i];
-      let existing = byYoutubeId.get(pl.id);
+        const baseSlug = baseSlugs[i];
+        let existing = byYoutubeId.get(pl.id);
 
-      if (!existing) {
-        const legacy = bySlug.get(baseSlug);
-        if (legacy && legacy.tutorId === tutor.id && !legacy.youtubePlaylistId && !claimedSlugs.has(baseSlug)) {
-          existing = await prisma.playlist.update({
-            where: { id: legacy.id },
-            data: { youtubePlaylistId: pl.id },
-            select: { id: true, slug: true, tutorId: true, youtubePlaylistId: true, youtubeVideoCount: true },
-          });
+        if (!existing) {
+          const legacy = bySlug.get(baseSlug);
+          if (legacy && legacy.tutorId === tutor.id && !legacy.youtubePlaylistId && !claimedSlugs.has(baseSlug)) {
+            existing = await prisma.playlist.update({
+              where: { id: legacy.id },
+              data: { youtubePlaylistId: pl.id },
+              select: { id: true, slug: true, tutorId: true, youtubePlaylistId: true, youtubeVideoCount: true },
+            });
+          }
         }
-      }
-      if (existing) claimedSlugs.add(existing.slug);
+        if (existing) claimedSlugs.add(existing.slug);
 
-      // Skip playlists whose YouTube video count matches what we stored after the last
-      // full fetch. youtubeVideoCount is only written after fetching every video, so a
-      // playlist that was never fully synced (count 0) is always fetched.
-      if (!FORCE && existing && existing.youtubeVideoCount === pl.itemCount) {
-        process.stdout.write(`⏭️  Sudah sinkron (${pl.itemCount} video), dilewati.\n`);
-        totalPlaylistsProcessed++;
-        continue;
-      }
+        // Skip playlists whose YouTube video count matches what we stored after the last
+        // full fetch. youtubeVideoCount is only written after fetching every video, so a
+        // playlist that was never fully synced (count 0) is always fetched.
+        if (!FORCE && existing && existing.youtubeVideoCount === pl.itemCount) {
+          process.stdout.write(`⏭️  Sudah sinkron (${pl.itemCount} video), dilewati.\n`);
+          totalPlaylistsProcessed++;
+          continue;
+        }
 
-      process.stdout.write(`mengambil video...`);
-      const videos = await fetchVideos(pl.id);
+        process.stdout.write(`mengambil video...`);
+        const videos = await fetchVideos(pl.id);
 
-      if (videos.length === 0) {
-        process.stdout.write(` ⚠️  Kosong atau privat, dilewati.\n`);
-        continue;
-      }
+        if (videos.length === 0) {
+          process.stdout.write(` ⚠️  Kosong atau privat, dilewati.\n`);
+          continue;
+        }
 
-      let dbPlaylist;
-      if (existing) {
-        dbPlaylist = await prisma.playlist.update({
-          where: { id: existing.id },
-          data: { title: pl.title, description: pl.description, thumbnailUrl: pl.thumbnail },
-        });
-      } else {
-        // Same title as another tutor's playlist, or a twin inside this channel:
-        // keep URLs unique with a short, stable suffix from the YouTube ID.
-        const slug =
-          bySlug.has(baseSlug) || claimedSlugs.has(baseSlug)
-            ? `${baseSlug}-${pl.id.slice(-6).toLowerCase()}`
-            : baseSlug;
-        dbPlaylist = await prisma.playlist.create({
-          data: {
-            tutorId: tutor.id,
-            youtubePlaylistId: pl.id,
-            slug,
-            title: pl.title,
-            description: pl.description,
-            thumbnailUrl: pl.thumbnail,
-            orderIndex: i + 1,
-          },
-        });
-        claimedSlugs.add(slug);
-      }
-
-      for (const video of videos) {
-        await prisma.video.upsert({
-          where: {
-            playlistId_youtubeVideoId: {
-              playlistId: dbPlaylist.id,
-              youtubeVideoId: video.youtubeVideoId,
+        let dbPlaylist;
+        if (existing) {
+          dbPlaylist = await prisma.playlist.update({
+            where: { id: existing.id },
+            data: { title: pl.title, description: pl.description, thumbnailUrl: pl.thumbnail },
+          });
+        } else {
+          // Same title as another tutor's playlist, or a twin inside this channel:
+          // keep URLs unique with a short, stable suffix from the YouTube ID.
+          const slug =
+            bySlug.has(baseSlug) || claimedSlugs.has(baseSlug)
+              ? `${baseSlug}-${pl.id.slice(-6).toLowerCase()}`
+              : baseSlug;
+          dbPlaylist = await prisma.playlist.create({
+            data: {
+              tutorId: tutor.id,
+              youtubePlaylistId: pl.id,
+              slug,
+              title: pl.title,
+              description: pl.description,
+              thumbnailUrl: pl.thumbnail,
+              orderIndex: i + 1,
             },
-          },
-          update: {
-            title: video.title,
-            orderIndex: video.orderIndex,
-          },
-          create: {
-            playlistId: dbPlaylist.id,
-            youtubeVideoId: video.youtubeVideoId,
-            title: video.title,
-            orderIndex: video.orderIndex,
-          },
+          });
+          claimedSlugs.add(slug);
+        byYoutubeId.set(pl.id, { ...dbPlaylist, youtubeVideoCount: 0 });
+        }
+
+        // One statement per chunk instead of one round trip per video: the database is far
+        // away, and per-row upserts made a full sync take hours.
+        for (let c = 0; c < videos.length; c += 500) {
+          const rows = videos
+            .slice(c, c + 500)
+            .map((v) => Prisma.sql`(gen_random_uuid()::text, ${dbPlaylist.id}, ${v.youtubeVideoId}, ${v.title}, ${v.orderIndex})`);
+          await prisma.$executeRaw`
+            INSERT INTO "Video" ("id", "playlistId", "youtubeVideoId", "title", "orderIndex")
+            VALUES ${Prisma.join(rows)}
+            ON CONFLICT ("playlistId", "youtubeVideoId")
+            DO UPDATE SET "title" = EXCLUDED."title", "orderIndex" = EXCLUDED."orderIndex"`;
+        }
+
+        // Record the count only now that every video is stored, so a run that dies
+        // mid-playlist leaves it unmarked and the next run fetches it again.
+        await prisma.playlist.update({
+          where: { id: dbPlaylist.id },
+          data: { youtubeVideoCount: pl.itemCount },
         });
-        
-        // Jeda sangat kecil per video agar Supabase Connection Pool bisa bernapas
-        await new Promise((r) => setTimeout(r, 20));
+
+        totalVideosAdded += videos.length;
+        totalPlaylistsProcessed++;
+        process.stdout.write(` ✅ ${videos.length} video.\n`);
+
+        // Jeda untuk hindari rate limit
+        await new Promise((r) => setTimeout(r, 200));
+      } catch (e) {
+        // The pooler drops the connection (and YouTube times out) now and then during a long run; redo this
+        // playlist instead of losing the whole sync. Every write here is an upsert.
+        if (attempt < 3 && isConnectionError(e)) {
+          attempt++;
+          console.warn(`\n   🔌 Koneksi database putus, mengulang playlist ini (${attempt}/3)...`);
+          await new Promise((r) => setTimeout(r, 15000 * attempt));
+          i--;
+          continue;
+        }
+        throw e;
       }
-
-      // Record the count only now that every video is stored, so a run that dies
-      // mid-playlist leaves it unmarked and the next run fetches it again.
-      await prisma.playlist.update({
-        where: { id: dbPlaylist.id },
-        data: { youtubeVideoCount: pl.itemCount },
-      });
-
-      totalVideosAdded += videos.length;
-      totalPlaylistsProcessed++;
-      process.stdout.write(` ✅ ${videos.length} video.\n`);
-
-      // Jeda untuk hindari rate limit
-      await new Promise((r) => setTimeout(r, 200));
+      attempt = 0;
     }
   }
 
