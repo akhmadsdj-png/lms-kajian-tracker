@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -91,6 +92,9 @@ export async function POST(request: NextRequest) {
       SET "seconds" = "UserDailyActivity"."seconds" + EXCLUDED."seconds"
     `;
   }
+
+  // A finished pertemuan changes progress bars and the dashboard; show it right away
+  if (isCompleted) revalidateTag(`progress-${session.user.id}`, { expire: 0 });
 
   return NextResponse.json({ saved: true, id: rows[0]?.id });
 }

@@ -118,7 +118,8 @@ export default async function VideoPage({
                 <div className="flex flex-wrap items-center gap-2">
                   {session?.user ? (
                     <>
-                      <MarkCompleteButton key={video.id} videoId={video.id} initialCompleted={isCompleted} />
+                      {/* key includes the status so an automatic finish (player refresh) shows up */}
+                      <MarkCompleteButton key={`${video.id}-${isCompleted}`} videoId={video.id} initialCompleted={isCompleted} />
                       {/* key: reset the menu state when moving to another pertemuan */}
                       <SaveButton key={video.id} videoId={video.id} initialSaved={savedInUserPlaylist} />
                     </>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 declare global {
   interface Window {
@@ -15,6 +16,9 @@ interface YouTubePlayerProps {
   startSeconds?: number;
 }
 
+// Kajian often close with a doa and an outro people skip, so the last 5% counts as finished.
+const COMPLETE_AT = 0.95;
+
 export function YouTubePlayer({
   videoId,
   dbVideoId,
@@ -23,6 +27,11 @@ export function YouTubePlayer({
   const playerRef = useRef<YT.Player | null>(null);
   const containerRef = useRef<string>(`yt-player-${videoId}`);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const completedSentRef = useRef(false);
+  const router = useRouter();
+  // Read only when the player is (re)built: the refresh after finishing changes startSeconds,
+  // and rebuilding then would restart playback.
+  const startSecondsRef = useRef(startSeconds);
 
   const saveProgress = useCallback(
     async (currentTime: number, isCompleted: boolean) => {
@@ -43,7 +52,32 @@ export function YouTubePlayer({
     [dbVideoId]
   );
 
+  // Saves the position, marking the pertemuan finished (once) when the video ended or the
+  // viewer reached the last stretch; the page then refreshes so the button and list update.
+  const savePosition = useCallback(
+    async (ended = false) => {
+      const player = playerRef.current;
+      const time = player?.getCurrentTime() ?? 0;
+      const duration = player?.getDuration() ?? 0;
+      const finished = ended || (duration > 0 && time >= duration * COMPLETE_AT);
+      if (finished && !completedSentRef.current) {
+        completedSentRef.current = true;
+        await saveProgress(time, true);
+        router.refresh();
+        return;
+      }
+      await saveProgress(time, false);
+    },
+    [saveProgress, router]
+  );
+
   useEffect(() => {
+    startSecondsRef.current = startSeconds;
+  }, [startSeconds]);
+
+  useEffect(() => {
+    completedSentRef.current = false;
+
     // Load the IFrame Player API script
     if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
       const tag = document.createElement("script");
@@ -61,7 +95,7 @@ export function YouTubePlayer({
         height: "100%",
         videoId: videoId,
         playerVars: {
-          start: Math.floor(startSeconds),
+          start: Math.floor(startSecondsRef.current),
           rel: 0,
           modestbranding: 1,
           cc_load_policy: 0,
@@ -69,8 +103,11 @@ export function YouTubePlayer({
         events: {
           onStateChange: (event: YT.OnStateChangeEvent) => {
             if (event.data === window.YT.PlayerState.PAUSED) {
-              const time = playerRef.current?.getCurrentTime() ?? 0;
-              saveProgress(time, false);
+              savePosition();
+            }
+
+            if (event.data === window.YT.PlayerState.ENDED) {
+              savePosition(true);
             }
 
             if (event.data === window.YT.PlayerState.PLAYING) {
@@ -78,10 +115,7 @@ export function YouTubePlayer({
               if (saveTimeoutRef.current) {
                 clearInterval(saveTimeoutRef.current);
               }
-              saveTimeoutRef.current = setInterval(() => {
-                const time = playerRef.current?.getCurrentTime() ?? 0;
-                saveProgress(time, false);
-              }, 15000);
+              saveTimeoutRef.current = setInterval(() => savePosition(), 15000);
             } else {
               if (saveTimeoutRef.current) {
                 clearInterval(saveTimeoutRef.current);
@@ -116,7 +150,7 @@ export function YouTubePlayer({
         playerRef.current.destroy();
       }
     };
-  }, [videoId, startSeconds, saveProgress]);
+  }, [videoId, saveProgress, savePosition]);
 
   return (
     <div className="relative w-full overflow-hidden bg-black">
